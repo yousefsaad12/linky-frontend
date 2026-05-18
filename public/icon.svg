@@ -1,0 +1,19 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    @media (prefers-color-scheme: light) {
+      .background { fill: #0a0a0a; }
+      .foreground { fill: #fafafa; }
+    }
+    @media (prefers-color-scheme: dark) {
+      .background { fill: #fafafa; }
+      .foreground { fill: #0a0a0a; }
+    }
+  </style>
+  <rect class="background" width="180" height="180" rx="37" />
+  <path
+    class="foreground"
+    fill-rule="evenodd"
+    clip-rule="evenodd"
+    d="M72 118L62 108C52 98 52 82 62 72L88 46C98 36 114 36 124 46L134 56L122 68L112 58C108 54 104 54 100 58L74 84C70 88 70 92 74 96L84 106L72 118ZM108 62L118 72C128 82 128 98 118 108L92 134C82 144 66 144 56 134L46 124L58 112L68 122C72 126 76 126 80 122L106 96C110 92 110 88 106 84L96 74L108 62Z"
+  />
+</svg>
