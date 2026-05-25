@@ -11,7 +11,7 @@ const footerLinks = {
     { name: "Pricing", href: "#pricing" },
   ],
   Developers: [
-    { name: "API examples", href: "#developers" },
+    { name: "API Reference", href: site.links.analyticsDocs },
     { name: "GitHub", href: site.links.github },
   ],
   Company: [

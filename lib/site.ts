@@ -15,7 +15,7 @@ export const site = {
   },
   links: {
     dashboard: "/dashboard",
-    analyticsDocs: "/#developers",
+    analyticsDocs: "/docs",
     github: "https://github.com/yousefsaad12",
   },
 } as const;

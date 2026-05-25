@@ -216,9 +216,7 @@ export function DevelopersSection() {
           {/* Mobile: View docs link */}
           <div className="pt-6">
             <a
-              href={site.links.github}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={site.links.analyticsDocs}
               className="text-sm text-background/60 hover:text-background transition underline underline-offset-4"
             >
               View full API docs →
@@ -295,9 +293,7 @@ export function DevelopersSection() {
               </button>
 
               <a
-                href={site.links.github}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={site.links.analyticsDocs}
                 className="text-background/70 hover:text-background transition"
               >
                 View full API docs →

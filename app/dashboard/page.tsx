@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { DashboardShell, type DashboardTab } from "@/components/dashboard/dashboard-shell";
 import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
@@ -8,20 +8,8 @@ import { LinksTablePanel } from "@/components/dashboard/links-table-panel";
 import { LiveClicksFeed } from "@/components/dashboard/live-clicks-feed";
 import { LinkComparisonPanel } from "@/components/dashboard/link-comparison-panel";
 import { DashboardError, DashboardLoading } from "@/components/dashboard/dashboard-states";
-import {
-  getMockAnalyticsOverview,
-  getMockLinkComparison,
-  getMockLinksTable,
-  getMockLiveClicks,
-  getMockRecentClicks,
-} from "@/lib/analytics/mock-service";
-import type {
-  AnalyticsLinksTableResponse,
-  AnalyticsOverviewData,
-  AnalyticsPeriod,
-  AnalyticsRecentClick,
-  LinkComparisonEntry,
-} from "@/lib/analytics/types";
+import { useDashboardData } from "@/features/dashboard";
+import type { AnalyticsPeriod } from "@/lib/analytics/types";
 
 function parseTab(value: string | null): DashboardTab {
   if (value === "links" || value === "compare" || value === "live") return value;
@@ -33,142 +21,63 @@ function DashboardPageContent() {
   const tab = parseTab(searchParams.get("tab"));
 
   const [period, setPeriod] = useState<AnalyticsPeriod>("7d");
-  const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
-  const [recentClicks, setRecentClicks] = useState<AnalyticsRecentClick[]>([]);
-  const [linksTable, setLinksTable] = useState<AnalyticsLinksTableResponse | null>(null);
   const [linksPage, setLinksPage] = useState(1);
   const [linksSort, setLinksSort] = useState<"clicks" | "createdAt">("clicks");
-  const [liveClicks, setLiveClicks] = useState<AnalyticsRecentClick[]>([]);
-  const [comparison, setComparison] = useState<LinkComparisonEntry[]>([]);
-  const [compareCodes, setCompareCodes] = useState<string[]>([]);
-  const [availableCompareCodes, setAvailableCompareCodes] = useState<string[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const [loading, setLoading] = useState(true);
-  const [linksLoading, setLinksLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const {
+    overview,
+    recentClicks,
+    linksTable,
+    liveClicks,
+    comparison,
+    compareCodes,
+    availableCompareCodes,
+    loading,
+    linksLoading,
+    error,
+    lastUpdated,
+    loadLinksTable,
+    loadComparison,
+    refresh,
+    setCompareCodes: setCompareCodesFromHook,
+  } = useDashboardData(tab, period);
 
-  const loadOverview = useCallback(async () => {
-    const [overviewData, recent] = await Promise.all([
-      getMockAnalyticsOverview(period, { topLinksLimit: 10 }),
-      getMockRecentClicks({ limit: 12 }),
-    ]);
-    setOverview(overviewData);
-    setRecentClicks(recent);
-    setLastUpdated(new Date());
-  }, [period]);
-
-  const loadLinksTable = useCallback(async () => {
-    setLinksLoading(true);
-    try {
-      const table = await getMockLinksTable({
-        page: linksPage,
-        limit: 20,
-        sort: linksSort,
-      });
-      setLinksTable(table);
-      setLastUpdated(new Date());
-    } finally {
-      setLinksLoading(false);
-    }
-  }, [linksPage, linksSort]);
-
-  const loadLiveFeed = useCallback(async () => {
-    const clicks = await getMockLiveClicks(30);
-    setLiveClicks(clicks);
-    setLastUpdated(new Date());
-  }, []);
-
-  const loadComparison = useCallback(
-    async (codesOverride?: string[]) => {
-      const overviewData = await getMockAnalyticsOverview(period, {
-        topLinksLimit: 8,
-      });
-      const codes = overviewData.topLinks.map((l) => l.shortCode);
-      setAvailableCompareCodes(codes);
-
-      const selected =
-        codesOverride ??
-        (compareCodes.length >= 2 ? compareCodes : codes.slice(0, 3));
-
-      if (codesOverride) {
-        setCompareCodes(codesOverride);
-      } else if (compareCodes.length < 2) {
-        setCompareCodes(selected);
-      }
-
-      const entries = await getMockLinkComparison(period, selected);
-      setComparison(entries);
-      setLastUpdated(new Date());
-    },
-    [period, compareCodes],
-  );
-
-  const refresh = useCallback(async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      if (tab === "overview") {
-        await loadOverview();
-      } else if (tab === "links") {
-        await loadLinksTable();
-      } else if (tab === "compare") {
-        await loadComparison();
-      } else {
-        await loadLiveFeed();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
-  }, [tab, loadOverview, loadLinksTable, loadComparison, loadLiveFeed]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  useEffect(() => {
-    if (tab !== "overview") return;
-    setLoading(true);
-    loadOverview()
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load overview."))
-      .finally(() => setLoading(false));
-  }, [period, tab, loadOverview]);
-
+  // Load links table when page/sort changes
   useEffect(() => {
     if (tab !== "links") return;
-    loadLinksTable().catch((err) =>
-      setError(err instanceof Error ? err.message : "Failed to load links."),
+    loadLinksTable(linksPage, linksSort).catch((err) =>
+      console.error("Failed to load links:", err),
     );
-  }, [tab, loadLinksTable]);
+  }, [tab, linksPage, linksSort, loadLinksTable]);
 
-  useEffect(() => {
-    if (tab !== "compare") return;
-    setLoading(true);
-    loadComparison()
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load comparison."),
-      )
-      .finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on tab/period only
-  }, [tab, period]);
-
-  useEffect(() => {
-    if (tab !== "live") return;
-    loadLiveFeed().catch((err) =>
-      setError(err instanceof Error ? err.message : "Failed to load live feed."),
-    );
-  }, [tab, loadLiveFeed]);
-
+  // Auto-refresh live feed - only when visible
   useEffect(() => {
     if (tab !== "live" || !autoRefresh) return;
-    const id = setInterval(() => {
-      loadLiveFeed().catch(() => undefined);
-    }, 30_000);
-    return () => clearInterval(id);
-  }, [tab, autoRefresh, loadLiveFeed]);
+    
+    // Check if page is visible before refreshing
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refresh().catch(() => undefined);
+      }
+    };
+    
+    const id = setInterval(refreshIfVisible, 30_000);
+    
+    // Also refresh when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && autoRefresh) {
+        refresh().catch(() => undefined);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [tab, autoRefresh, refresh]);
 
   return (
     <DashboardShell
@@ -214,7 +123,7 @@ function DashboardPageContent() {
             availableCodes={availableCompareCodes}
             selectedCodes={compareCodes}
             onSelectionChange={(codes) => {
-              setCompareCodes(codes);
+              setCompareCodesFromHook(codes);
               loadComparison(codes).catch(() => undefined);
             }}
             recalcKey={`${period}-${compareCodes.join(",")}`}
