@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw, LogOut, User } from "lucide-react";
 import { AnalyticsPeriodSelector } from "@/components/analytics";
 import { Button } from "@/components/ui/button";
 import { site } from "@/lib/site";
 import type { AnalyticsPeriod } from "@/lib/analytics/types";
 import { cn } from "@/lib/utils";
+import { logout } from "@/lib/auth";
+import { AuthApiError } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export type DashboardTab = "overview" | "links" | "compare" | "live";
 
@@ -45,6 +48,32 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const pathname = usePathname();
   const onLinkDetail = pathname.startsWith("/dashboard/links/");
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out successfully",
+      });
+      // Redirect to home page
+      window.location.href = "/";
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        toast({
+          title: "Logout failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen noise-overlay">
@@ -72,6 +101,17 @@ export function DashboardShell({
 
             <div className="flex items-center gap-2 shrink-0">
               {actions}
+              <Link href="/dashboard/profile">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full font-mono text-xs"
+                >
+                  <User className="h-3.5 w-3.5 mr-1.5" />
+                  Profile
+                </Button>
+              </Link>
               {onRefresh ? (
                 <Button
                   type="button"
@@ -87,6 +127,16 @@ export function DashboardShell({
                   Refresh
                 </Button>
               ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full font-mono text-xs"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-3.5 w-3.5 mr-1.5" />
+                Logout
+              </Button>
               <AnalyticsPeriodSelector
                 period={period}
                 onChange={onPeriodChange}

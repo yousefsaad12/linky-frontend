@@ -143,10 +143,19 @@ export async function fetchLinksTable(options: {
   params.set("limit", String(options.limit ?? 20));
   if (options.sort) params.set("sort", options.sort);
 
-  const envelope = await fetch(
-    `${site.apiUrl}/api/v1/analytics/links-table?${params.toString()}`,
+  // Try /api/v1/url first (URL management endpoint)
+  let envelope = await fetch(
+    `${site.apiUrl}/api/v1/url?${params.toString()}`,
     { credentials: "include", headers: { Accept: "application/json" } },
   );
+
+  // If that fails with 404, try /api/v1/analytics/links
+  if (envelope.status === 404) {
+    envelope = await fetch(
+      `${site.apiUrl}/api/v1/analytics/links?${params.toString()}`,
+      { credentials: "include", headers: { Accept: "application/json" } },
+    );
+  }
 
   if (envelope.status === 401) throw new AnalyticsAuthError();
   if (!envelope.ok) {
@@ -154,12 +163,21 @@ export async function fetchLinksTable(options: {
   }
 
   const json = await envelope.json();
+  
+  // Transform URL list response to links table format
+  const urls = json.data || json.urls || [];
   return {
     page: json.page ?? 1,
     totalPages: json.totalPages ?? 1,
-    total: json.total ?? 0,
-    results: json.results ?? 0,
-    data: json.data ?? [],
+    total: json.total ?? urls.length,
+    results: json.results ?? urls.length,
+    data: urls.map((url: any) => ({
+      shortCode: url.shortCode,
+      originalUrl: url.originalUrl,
+      clicks: url.clicks || 0,
+      createdAt: url.createdAt,
+      updatedAt: url.updatedAt,
+    })),
   };
 }
 

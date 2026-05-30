@@ -7,28 +7,28 @@ import { site } from "@/lib/site";
 const plans = [
   {
     name: "Free",
-    description: "For personal projects and prototypes",
+    description: "Get started, no card needed",
     price: { monthly: 0, annual: 0 },
     features: [
-      "Up to 50 short links",
-      "30 days of click history",
+      "500 short links",
+      "90 days of click history",
+      "Device + country analytics",
       "Google sign-in",
-      "Basic per-link analytics",
-      "CSV export",
     ],
     cta: "Get started",
     popular: false,
   },
   {
     name: "Pro",
-    description: "Production-ready for apps and teams",
-    price: { monthly: 12, annual: 10 },
+    description: "For businesses that need more power",
+    price: { monthly: 7, annual: 5 },
     features: [
       "Unlimited short links",
-      "90 days of click history",
+      "3 custom domains",
+      "1 year of click history",
+      "City-level + device analytics",
       "API keys and scoped access",
       "Webhooks for realtime events",
-      "Export CSV / JSON",
       "Priority support",
     ],
     cta: "Start free trial",
@@ -36,20 +36,21 @@ const plans = [
   },
   {
     name: "Team",
-    description: "Custom plans for teams and enterprises",
-    price: { monthly: null, annual: null },
+    description: "For teams that work together",
+    price: { monthly: 25, annual: 20 },
     features: [
       "Everything in Pro",
-      "Team accounts and roles",
-      "Custom domains",
-      "Higher limits and SLAs",
-      "Onboarding & support",
+      "Unlimited team members",
+      "10+ custom domains",
+      "Role-based permissions",
+      "SSO / SAML",
+      "99.9% uptime SLA",
+      "Dedicated onboarding",
     ],
     cta: "Contact us",
     popular: false,
   },
 ];
-
 export function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(true);
 

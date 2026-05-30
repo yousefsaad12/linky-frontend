@@ -1,11 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type { AnalyticsLinkRow, AnalyticsLinksTableResponse } from "@/lib/analytics/types";
 import { formatAnalyticsNumber, truncateUrl } from "@/lib/analytics/format";
 import { cn } from "@/lib/utils";
+import { CreateUrlDialog } from "@/components/dashboard/create-url-dialog";
+import { deleteUrl } from "@/lib/url";
+import { UrlAuthError, UrlApiError } from "@/lib/url";
+import { useToast } from "@/hooks/use-toast";
 
 interface LinksTablePanelProps {
   table: AnalyticsLinksTableResponse;
@@ -22,6 +37,39 @@ export function LinksTablePanel({
   onPageChange,
   loading,
 }: LinksTablePanelProps) {
+  const { toast } = useToast();
+
+  const handleDelete = async (shortCode: string) => {
+    try {
+      await deleteUrl(shortCode);
+      toast({
+        title: "URL deleted",
+        description: `Short code ${shortCode} has been deleted`,
+      });
+      // Refresh the page to show updated links
+      window.location.reload();
+    } catch (error) {
+      if (error instanceof UrlAuthError) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to delete URLs",
+          variant: "destructive",
+        });
+      } else if (error instanceof UrlApiError) {
+        toast({
+          title: "Failed to delete URL",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    }
+  };
   return (
     <div className="space-y-px">
       <div className="flex flex-wrap items-center justify-between gap-4 border border-foreground/10 bg-background p-4 lg:p-5">
@@ -32,19 +80,22 @@ export function LinksTablePanel({
             {table.totalPages}
           </p>
         </div>
-        <div className="flex gap-1">
-          <SortButton
-            active={sort === "clicks"}
-            onClick={() => onSortChange("clicks")}
-          >
-            By clicks
-          </SortButton>
-          <SortButton
-            active={sort === "createdAt"}
-            onClick={() => onSortChange("createdAt")}
-          >
-            By created
-          </SortButton>
+        <div className="flex gap-2">
+          <CreateUrlDialog />
+          <div className="flex gap-1">
+            <SortButton
+              active={sort === "clicks"}
+              onClick={() => onSortChange("clicks")}
+            >
+              By clicks
+            </SortButton>
+            <SortButton
+              active={sort === "createdAt"}
+              onClick={() => onSortChange("createdAt")}
+            >
+              By created
+            </SortButton>
+          </div>
         </div>
       </div>
 
@@ -73,7 +124,7 @@ export function LinksTablePanel({
               </tr>
             ) : (
               table.data.map((row) => (
-                <LinkRow key={row.shortCode} row={row} />
+                <LinkRow key={row.shortCode} row={row} onDelete={handleDelete} />
               ))
             )}
           </tbody>
@@ -113,7 +164,7 @@ export function LinksTablePanel({
   );
 }
 
-function LinkRow({ row }: { row: AnalyticsLinkRow }) {
+function LinkRow({ row, onDelete }: { row: AnalyticsLinkRow; onDelete: (shortCode: string) => Promise<void> }) {
   const created = new Date(row.createdAt);
   const createdLabel = Number.isNaN(created.getTime())
     ? "—"
@@ -143,13 +194,45 @@ function LinkRow({ row }: { row: AnalyticsLinkRow }) {
         {createdLabel}
       </td>
       <td className="p-4 text-right">
-        <Link
-          href={`/dashboard/links/${encodeURIComponent(row.shortCode)}`}
-          className="inline-flex text-muted-foreground hover:text-foreground"
-          aria-label={`View analytics for ${row.shortCode}`}
-        >
-          <ExternalLink className="h-4 w-4" />
-        </Link>
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            href={`/dashboard/links/${encodeURIComponent(row.shortCode)}`}
+            className="inline-flex text-muted-foreground hover:text-foreground"
+            aria-label={`View analytics for ${row.shortCode}`}
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                aria-label={`Delete ${row.shortCode}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete URL</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete the short URL <span className="font-mono">{row.shortCode}</span>? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onDelete(row.shortCode)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </td>
     </tr>
   );

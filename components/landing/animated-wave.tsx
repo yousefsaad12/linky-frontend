@@ -6,7 +6,8 @@ export const AnimatedWave = memo(function AnimatedWave() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const lastTimeRef = useRef(0);
-  const fpsIntervalRef = useRef(1000 / 30); // Cap at 30 FPS
+  const fpsIntervalRef = useRef(1000 / 20); // Cap at 20 FPS
+  const isVisibleRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,7 +30,21 @@ export const AnimatedWave = memo(function AnimatedWave() {
     resize();
     window.addEventListener("resize", resize);
 
+    // Intersection observer to pause animation when not visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisibleRef.current = entries[0].isIntersecting;
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(canvas);
+
     const render = (timestamp: number) => {
+      if (!isVisibleRef.current) {
+        frameRef.current = requestAnimationFrame(render);
+        return;
+      }
+
       const elapsed = timestamp - lastTimeRef.current;
       
       if (elapsed > fpsIntervalRef.current) {
@@ -42,8 +57,8 @@ export const AnimatedWave = memo(function AnimatedWave() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        const cols = Math.floor(rect.width / 24); // Increased spacing for better performance
-        const rows = Math.floor(rect.height / 24);
+        const cols = Math.floor(rect.width / 32); // Increased spacing for better performance
+        const rows = Math.floor(rect.height / 32);
 
         for (let y = 0; y < rows; y++) {
           for (let x = 0; x < cols; x++) {
@@ -76,6 +91,7 @@ export const AnimatedWave = memo(function AnimatedWave() {
     return () => {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(frameRef.current);
+      observer.disconnect();
     };
   }, []);
 

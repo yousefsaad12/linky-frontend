@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useCreateUrl } from "@/features/dashboard/hooks/use-create-url";
 
 const steps = [
   {
@@ -27,6 +28,8 @@ export function HowItWorksSection() {
   const [activeStep, setActiveStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const [url, setUrl] = useState("");
+  const { createUrl, loading, shortCode } = useCreateUrl();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -126,13 +129,19 @@ export function HowItWorksSection() {
                     </label>
                     <div className="flex gap-3 flex-col sm:flex-row">
                       <input
-                        type="text"
-                        readOnly
-                        value="https://example.com/very/long-link"
-                        className="min-w-0 flex-1 rounded-2xl border border-background/10 bg-foreground/5 px-4 py-3 text-sm text-background outline-none"
+                        type="url"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="https://example.com/very/long-link"
+                        className="min-w-0 flex-1 rounded-2xl border border-background/10 bg-foreground/5 px-4 py-3 text-sm text-background outline-none focus:border-background/30 transition"
+                        disabled={loading}
                       />
-                      <button className="rounded-full bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-background/90 transition">
-                        Create short URL
+                      <button
+                        onClick={() => createUrl(url)}
+                        disabled={loading || !url.trim()}
+                        className="rounded-full bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-background/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? "Creating..." : "Create short URL"}
                       </button>
                     </div>
                   </div>
@@ -143,7 +152,7 @@ export function HowItWorksSection() {
                     Short URL preview
                   </p>
                   <div className="rounded-2xl border border-background/10 px-4 py-3 text-sm text-background/80">
-                    linky/abc123
+                    {shortCode ? `linky/${shortCode}` : "linky/abc123"}
                   </div>
                 </div>
 

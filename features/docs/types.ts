@@ -19,15 +19,6 @@ export type Endpoint = {
   responseDescription: string;
 };
 
-export type CodeSnippets = {
-  nodejs: string;
-  dotnet: string;
-  python: string;
-  go: string;
-  spring: string;
-  response: string;
-};
-
 export type DocsCategory = {
   title: string;
   icon: React.ReactNode;

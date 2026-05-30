@@ -6,7 +6,8 @@ export const AnimatedTetrahedron = memo(function AnimatedTetrahedron() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const lastTimeRef = useRef(0);
-  const fpsIntervalRef = useRef(1000 / 30); // Cap at 30 FPS
+  const fpsIntervalRef = useRef(1000 / 20); // Cap at 20 FPS
+  const isVisibleRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -28,6 +29,15 @@ export const AnimatedTetrahedron = memo(function AnimatedTetrahedron() {
 
     resize();
     window.addEventListener("resize", resize);
+
+    // Intersection observer to pause animation when not visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisibleRef.current = entries[0].isIntersecting;
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(canvas);
 
     // Tetrahedron vertices
     const vertices = [
@@ -65,6 +75,11 @@ export const AnimatedTetrahedron = memo(function AnimatedTetrahedron() {
     });
 
     const render = (timestamp: number) => {
+      if (!isVisibleRef.current) {
+        frameRef.current = requestAnimationFrame(render);
+        return;
+      }
+
       const elapsed = timestamp - lastTimeRef.current;
       
       if (elapsed > fpsIntervalRef.current) {
@@ -88,7 +103,7 @@ export const AnimatedTetrahedron = memo(function AnimatedTetrahedron() {
           const v1 = vertices[i];
           const v2 = vertices[j];
 
-          for (let t = 0; t <= 1; t += 0.08) {
+          for (let t = 0; t <= 1; t += 0.12) {
             let point = {
               x: v1.x + (v2.x - v1.x) * t,
               y: v1.y + (v2.y - v1.y) * t,
@@ -117,8 +132,8 @@ export const AnimatedTetrahedron = memo(function AnimatedTetrahedron() {
           const v2 = vertices[j];
           const v3 = vertices[k];
 
-          for (let u = 0; u <= 1; u += 0.18) {
-            for (let v = 0; v <= 1 - u; v += 0.18) {
+          for (let u = 0; u <= 1; u += 0.25) {
+            for (let v = 0; v <= 1 - u; v += 0.25) {
               const w = 1 - u - v;
               let point = {
                 x: v1.x * u + v2.x * v + v3.x * w,
@@ -162,6 +177,7 @@ export const AnimatedTetrahedron = memo(function AnimatedTetrahedron() {
     return () => {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(frameRef.current);
+      observer.disconnect();
     };
   }, []);
 

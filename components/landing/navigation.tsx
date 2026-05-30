@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { site } from "@/lib/site";
+import { useAuth } from "@/hooks/use-auth";
+import { logout } from "@/lib/auth";
+import { AuthApiError } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const navLinks = [
-  { name: "Dashboard", href: "/dashboard" },
+ 
   { name: "Features", href: "#features" },
   { name: "How it works", href: "#how-it-works" },
   { name: "Analytics", href: "#analytics" },
@@ -18,6 +22,36 @@ const navLinks = [
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, loading } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignIn = () => {
+    window.location.href = site.auth.signIn;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out successfully",
+      });
+      window.location.href = "/";
+    } catch (error) {
+      if (error instanceof AuthApiError) {
+        toast({
+          title: "Logout failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -54,7 +88,7 @@ export function Navigation() {
             
           </a>
 
-          <DesktopNav isScrolled={isScrolled} />
+          <DesktopNav isScrolled={isScrolled} isAuthenticated={isAuthenticated} user={user} loading={loading} onSignIn={handleSignIn} onLogout={handleLogout} />
 
           <button
             type="button"
@@ -108,29 +142,43 @@ export function Navigation() {
             }`}
             style={{ transitionDelay: isMobileMenuOpen ? "300ms" : "0ms" }}
           >
-            <Button
-              variant="outline"
-              className="flex-1 rounded-full h-14 text-base"
-              asChild
-            >
-              <a
-                href={site.auth.signIn}
-                onClick={() => setIsMobileMenuOpen(false)}
+            {loading ? (
+              <div className="flex-1 text-center text-foreground/50">Loading...</div>
+            ) : isAuthenticated ? (
+              <>
+                <Button
+                  className="flex-1 bg-foreground text-background rounded-full h-14 text-base"
+                  asChild
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <a href="/dashboard/profile">
+                    <User className="h-4 w-4 mr-2" />
+                    {user?.name || user?.email || "Profile"}
+                  </a>
+                </Button>
+                <Button
+                  className="flex-1 bg-black text-white rounded-full h-14 text-base"
+                  onClick={async () => {
+                    await handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Button
+                className="flex-1 bg-black text-white rounded-full h-14 text-base"
+                onClick={() => {
+                  handleSignIn();
+                  setIsMobileMenuOpen(false);
+                }}
               >
                 Sign in
-              </a>
-            </Button>
-            <Button
-              className="flex-1 bg-foreground text-background rounded-full h-14 text-base"
-              asChild
-            >
-              <a
-                href={site.auth.signIn}
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Get started
-              </a>
-            </Button>
+              </Button>
+            )}
+
           </div>
         </div>
       </div>
@@ -138,7 +186,7 @@ export function Navigation() {
   );
 }
 
-function DesktopNav({ isScrolled }: { isScrolled: boolean }) {
+function DesktopNav({ isScrolled, isAuthenticated, user, loading, onSignIn, onLogout }: { isScrolled: boolean; isAuthenticated: boolean; user: any; loading: boolean; onSignIn: () => void; onLogout: () => Promise<void> }) {
   return (
     <>
       <div className="hidden md:flex items-center gap-12">
@@ -155,19 +203,41 @@ function DesktopNav({ isScrolled }: { isScrolled: boolean }) {
       </div>
 
       <div className="hidden md:flex items-center gap-4">
-        <a
-          href={site.auth.signIn}
-          className={`text-foreground/70 hover:text-foreground transition-all duration-500 ${isScrolled ? "text-xs" : "text-sm"}`}
-        >
-          Sign in
-        </a>
-        <Button
-          size="sm"
-          className={`bg-foreground hover:bg-foreground/90 text-background rounded-full transition-all duration-500 ${isScrolled ? "px-4 h-8 text-xs" : "px-6"}`}
-          asChild
-        >
-          <a href={site.auth.signIn}>Get started</a>
-        </Button>
+        {loading ? (
+          <div className="text-sm text-foreground/50">Loading...</div>
+        ) : isAuthenticated ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`rounded-full transition-all duration-500 ${isScrolled ? "px-4 h-8 text-xs" : "px-5 h-10 text-sm"}`}
+              asChild
+            >
+              <a href="/dashboard/profile">
+                <User className="h-4 w-4 mr-2" />
+                {user?.name || user?.email || "Profile"}
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={`rounded-full transition-all duration-500 ${isScrolled ? "px-4 h-8 text-xs" : "px-5 h-10 text-sm"}`}
+              onClick={onLogout}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className={`rounded-full transition-all duration-500 ${isScrolled ? "px-4 h-8 text-xs" : "px-5 h-10 text-sm"}`}
+            onClick={onSignIn}
+          >
+            Sign in
+          </Button>
+        )}
       </div>
     </>
   );

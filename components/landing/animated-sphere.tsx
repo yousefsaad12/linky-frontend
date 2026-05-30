@@ -6,7 +6,8 @@ export const AnimatedSphere = memo(function AnimatedSphere() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(0);
   const lastTimeRef = useRef(0);
-  const fpsIntervalRef = useRef(1000 / 30); // Cap at 30 FPS
+  const fpsIntervalRef = useRef(1000 / 20); // Cap at 20 FPS
+  const isVisibleRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,7 +30,21 @@ export const AnimatedSphere = memo(function AnimatedSphere() {
     resize();
     window.addEventListener("resize", resize);
 
+    // Intersection observer to pause animation when not visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisibleRef.current = entries[0].isIntersecting;
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(canvas);
+
     const render = (timestamp: number) => {
+      if (!isVisibleRef.current) {
+        frameRef.current = requestAnimationFrame(render);
+        return;
+      }
+
       const elapsed = timestamp - lastTimeRef.current;
       
       if (elapsed > fpsIntervalRef.current) {
@@ -50,8 +65,8 @@ export const AnimatedSphere = memo(function AnimatedSphere() {
         const points: { x: number; y: number; z: number; char: string }[] = [];
 
         // Generate sphere points with reduced resolution
-        for (let phi = 0; phi < Math.PI * 2; phi += 0.2) {
-          for (let theta = 0; theta < Math.PI; theta += 0.2) {
+        for (let phi = 0; phi < Math.PI * 2; phi += 0.25) {
+          for (let theta = 0; theta < Math.PI; theta += 0.25) {
             const x = Math.sin(theta) * Math.cos(phi + time * 0.5);
             const y = Math.sin(theta) * Math.sin(phi + time * 0.5);
             const z = Math.cos(theta);
@@ -99,6 +114,7 @@ export const AnimatedSphere = memo(function AnimatedSphere() {
     return () => {
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(frameRef.current);
+      observer.disconnect();
     };
   }, []);
 

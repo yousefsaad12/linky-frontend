@@ -1,8 +1,7 @@
 /** Linky — developer-first link analytics (matches URLShortener backend) */
 
 const apiUrl =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
-  "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") 
 
 export const site = {
   name: "Linky",

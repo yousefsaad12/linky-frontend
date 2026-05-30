@@ -1,24 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Copy, Check } from "lucide-react";
-
-import dynamic from "next/dynamic";
-
 import { site } from "@/lib/site";
-
-const CodeSnippetPanel = dynamic(
-  () =>
-    import("@/components/landing/code-snippet-panel").then(
-      (mod) => mod.CodeSnippetPanel,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="min-h-[280px] animate-pulse bg-background/5" aria-hidden />
-    ),
-  },
-);
 
 interface DocStep {
   number: string;
@@ -32,63 +15,61 @@ const docsSteps: DocStep[] = [
     number: "I",
     title: "Create a short link",
     description: "POST /api/v1/url — returns a short URL in JSON.",
-    code: `const res = await fetch("${site.apiUrl}/api/v1/url", {
+    code: `const response = await fetch("/api/v1/url", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
-  credentials: "include",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
   body: JSON.stringify({
-    originalUrl: "https://example.com",
-  }),
+    url: "https://example.com/very-long-url"
+  })
 });
-const { data } = await res.json();`,
+
+const data = await response.json();
+console.log(data.shortUrl);`
   },
   {
     number: "II",
     title: "Load dashboard analytics",
     description:
       "GET /api/v1/analytics/overview — KPIs, timeline, top links, breakdowns.",
-    code: `const res = await fetch(
-  "${site.apiUrl}/api/v1/analytics/overview",
-  { credentials: "include" }
-);
-const { data } = await res.json();
-// data.summary, data.timeline, data.topLinks, data.breakdowns`,
+    code: `const response = await fetch("/api/v1/analytics/overview", {
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY"
+  }
+});
+
+const data = await response.json();
+console.log(data.totalClicks, data.activeLinks);`
   },
   {
     number: "III",
     title: "Drill into a single link",
     description:
       "GET /api/v1/analytics/links/:shortCode — per-link stats and breakdowns.",
-    code: `const res = await fetch(
-  "${site.apiUrl}/api/v1/analytics/links/k9Xm?period=7d",
-  { credentials: "include" }
-);
-const { data } = await res.json();
-// data.url, data.summary, data.timeline, data.breakdowns`,
+    code: `const response = await fetch("/api/v1/analytics/links/abc123", {
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY"
+  }
+});
+
+const data = await response.json();
+console.log(data.clicksOverTime, data.countries);`
   },
 ];
 
 export function DevelopersSection() {
   const [activeStep, setActiveStep] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [codeOpen, setCodeOpen] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
   const currentStep = docsSteps[activeStep];
 
   if (!currentStep) return null;
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(currentStep.code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const handleStepClick = (index: number) => {
     setActiveStep(index);
-    // On mobile, open the code panel when a step is tapped
-    setCodeOpen(true);
   };
 
   useEffect(() => {
@@ -143,7 +124,6 @@ export function DevelopersSection() {
         <div className="lg:hidden space-y-0">
           {docsSteps.map((step, index) => {
             const isActive = activeStep === index;
-            const isOpen = isActive && codeOpen;
             return (
               <div
                 key={step.number}
@@ -152,13 +132,7 @@ export function DevelopersSection() {
                 {/* Step header — always visible */}
                 <button
                   type="button"
-                  onClick={() => {
-                    if (isActive) {
-                      setCodeOpen((o) => !o);
-                    } else {
-                      handleStepClick(index);
-                    }
-                  }}
+                  onClick={() => handleStepClick(index)}
                   className={`w-full text-left py-5 sm:py-6 transition-all duration-300 ${
                     isActive ? "opacity-100" : "opacity-40"
                   }`}
@@ -168,21 +142,9 @@ export function DevelopersSection() {
                       {step.number}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-3">
-                        <h3 className="text-lg sm:text-xl font-display">
-                          {step.title}
-                        </h3>
-                        {/* Chevron shows only for active step on mobile */}
-                        {isActive && (
-                          <span
-                            className={`text-background/40 text-xs font-mono transition-transform duration-300 shrink-0 ${
-                              isOpen ? "rotate-180" : ""
-                            }`}
-                          >
-                            ▾
-                          </span>
-                        )}
-                      </div>
+                      <h3 className="text-lg sm:text-xl font-display">
+                        {step.title}
+                      </h3>
                       <p className="text-sm text-background/60 leading-relaxed mt-1">
                         {step.description}
                       </p>
@@ -198,17 +160,6 @@ export function DevelopersSection() {
                     </div>
                   </div>
                 </button>
-
-                {/* Inline code panel — expands on tap */}
-                {isOpen && (
-                  <div className="pb-5 sm:pb-6">
-                    <MobileCodePanel
-                      step={step}
-                      copied={copied}
-                      onCopy={handleCopy}
-                    />
-                  </div>
-                )}
               </div>
             );
           })}
@@ -252,46 +203,19 @@ export function DevelopersSection() {
             ))}
           </div>
 
-          {/* Right: sticky code panel */}
+          {/* Right: sticky content area */}
           <div className="lg:sticky lg:top-32 self-start">
-            <div className="border border-background/10 overflow-hidden bg-background/5">
-              <div className="px-6 py-4 border-b border-background/10 flex items-center justify-between">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-background/20" />
-                  <div className="w-3 h-3 rounded-full bg-background/20" />
-                  <div className="w-3 h-3 rounded-full bg-background/20" />
-                </div>
-                <span className="text-xs font-mono text-background/40">
-                  linky-api.js
-                </span>
+            <div className="bg-background/5 border border-background/10 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-background/10">
+                <span className="text-xs font-mono text-background/40">Example</span>
               </div>
-              {isVisible ? (
-                <CodeSnippetPanel
-                  code={currentStep.code}
-                  panelKey={String(activeStep)}
-                />
-              ) : (
-                <div
-                  className="min-h-[280px] animate-pulse bg-background/5"
-                  aria-hidden
-                />
-              )}
+              <div className="p-4 overflow-x-auto">
+                <pre className="text-xs font-mono text-background/80 whitespace-pre leading-relaxed">
+                  {currentStep.code}
+                </pre>
+              </div>
             </div>
-
-            <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-4 text-sm">
-              <button
-                type="button"
-                onClick={handleCopy}
-                className="inline-flex items-center justify-center rounded-full bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-background/90 transition"
-              >
-                {copied ? (
-                  <Check className="w-4 h-4 mr-2 text-green-400" />
-                ) : (
-                  <Copy className="w-4 h-4 mr-2" />
-                )}
-                {copied ? "Copied" : "Copy snippet"}
-              </button>
-
+            <div className="mt-6">
               <a
                 href={site.links.analyticsDocs}
                 className="text-background/70 hover:text-background transition"
@@ -310,53 +234,6 @@ export function DevelopersSection() {
         }
       `}</style>
     </section>
-  );
-}
-
-/* ─── Mobile inline code panel ─────────────────────────────── */
-function MobileCodePanel({
-  step,
-  copied,
-  onCopy,
-}: {
-  step: DocStep;
-  copied: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <div className="border border-background/10 overflow-hidden bg-background/5">
-      {/* Fake window chrome */}
-      <div className="px-4 py-3 border-b border-background/10 flex items-center justify-between">
-        <div className="flex gap-1.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-background/20" />
-          <div className="w-2.5 h-2.5 rounded-full bg-background/20" />
-          <div className="w-2.5 h-2.5 rounded-full bg-background/20" />
-        </div>
-        <span className="text-xs font-mono text-background/40">linky-api.js</span>
-      </div>
-
-      {/* Code — horizontally scrollable on narrow screens */}
-      <div className="overflow-x-auto">
-        <CodeSnippetPanel code={step.code} panelKey={`mobile-${step.number}`} />
-      </div>
-
-      {/* Copy button */}
-      <div className="px-4 py-3 border-t border-background/10 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onCopy}
-          className="inline-flex items-center gap-2 text-xs font-medium text-background/70 hover:text-background transition"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-400" />
-          ) : (
-            <Copy className="w-3.5 h-3.5" />
-          )}
-          {copied ? "Copied!" : "Copy snippet"}
-        </button>
-        <span className="text-xs text-background/30 font-mono">{step.number} / III</span>
-      </div>
-    </div>
   );
 }
 

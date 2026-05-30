@@ -7,12 +7,11 @@ import type {
   LinkComparisonEntry,
 } from "@/lib/analytics/types";
 import {
-  getMockAnalyticsOverview,
-  getMockLinkComparison,
-  getMockLinksTable,
-  getMockLiveClicks,
-  getMockRecentClicks,
-} from "@/lib/analytics/mock-service";
+  fetchAnalyticsOverview,
+  fetchLinksTable,
+  fetchRecentClicks,
+  fetchTopLinks,
+} from "@/lib/analytics/api";
 
 export function useDashboardData(tab: string, period: AnalyticsPeriod) {
   const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
@@ -30,8 +29,8 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
 
   const loadOverview = useCallback(async () => {
     const [overviewData, recent] = await Promise.all([
-      getMockAnalyticsOverview(period, { topLinksLimit: 10 }),
-      getMockRecentClicks({ limit: 12 }),
+      fetchAnalyticsOverview(period, { topLinksLimit: 10 }),
+      fetchRecentClicks({ limit: 12 }),
     ]);
     setOverview(overviewData);
     setRecentClicks(recent);
@@ -42,7 +41,7 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
     async (page: number, sort: "clicks" | "createdAt") => {
       setLinksLoading(true);
       try {
-        const table = await getMockLinksTable({
+        const table = await fetchLinksTable({
           page,
           limit: 20,
           sort,
@@ -57,17 +56,17 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
   );
 
   const loadLiveFeed = useCallback(async () => {
-    const clicks = await getMockLiveClicks(30);
+    const clicks = await fetchRecentClicks({ limit: 30 });
     setLiveClicks(clicks);
     setLastUpdated(new Date());
   }, []);
 
   const loadComparison = useCallback(
     async (codesOverride?: string[]) => {
-      const overviewData = await getMockAnalyticsOverview(period, {
+      const overviewData = await fetchAnalyticsOverview(period, {
         topLinksLimit: 8,
       });
-      const codes = overviewData.topLinks.map((l) => l.shortCode);
+      const codes = overviewData.topLinks.map((l: { shortCode: string }) => l.shortCode);
       setAvailableCompareCodes(codes);
 
       const selected =
@@ -80,7 +79,36 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
         setCompareCodes(selected);
       }
 
-      const entries = await getMockLinkComparison(period, selected);
+      // Build comparison entries from overview data
+      const totalClicksInPeriod = overviewData.summary.clicksInPeriod;
+      const entries: LinkComparisonEntry[] = overviewData.topLinks
+        .filter((link: { shortCode: string }) => selected.includes(link.shortCode))
+        .map((link: { shortCode: string; originalUrl: string; clicks: number; totalClicks: number }) => {
+          const periodClicks = link.clicks;
+          const shareOfPeriod = totalClicksInPeriod > 0 
+            ? (periodClicks / totalClicksInPeriod) * 100 
+            : 0;
+          const avgPerDay = period === "24h" 
+            ? periodClicks 
+            : Math.round(periodClicks / (period === "7d" ? 7 : 30));
+          const leaderClicks = Math.max(...overviewData.topLinks.map((l: { clicks: number }) => l.clicks));
+          const vsLeaderPercent = leaderClicks > 0 
+            ? ((periodClicks / leaderClicks) * 100) 
+            : 0;
+          const isLeader = periodClicks === leaderClicks;
+
+          return {
+            shortCode: link.shortCode,
+            originalUrl: link.originalUrl,
+            periodClicks,
+            totalClicks: link.totalClicks,
+            shareOfPeriod,
+            avgPerDay,
+            vsLeaderPercent,
+            isLeader,
+          };
+        });
+
       setComparison(entries);
       setLastUpdated(new Date());
     },

@@ -62,7 +62,7 @@ function DashboardPageContent() {
       }
     };
     
-    const id = setInterval(refreshIfVisible, 30_000);
+    const id = setInterval(refreshIfVisible, 60_000);
     
     // Also refresh when tab becomes visible
     const handleVisibilityChange = () => {
@@ -82,7 +82,7 @@ function DashboardPageContent() {
   return (
     <DashboardShell
       title="Analytics dashboard"
-      subtitle="Sample data — same shape as the live API"
+      subtitle="Real-time analytics from your backend"
       period={period}
       onPeriodChange={setPeriod}
       onRefresh={refresh}

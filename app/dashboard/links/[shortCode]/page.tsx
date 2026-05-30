@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { LinkDetailView } from "@/components/dashboard/link-detail-view";
 import { DashboardError, DashboardLoading } from "@/components/dashboard/dashboard-states";
-import { getMockUrlAnalytics } from "@/lib/analytics/mock-service";
+import { fetchUrlAnalytics } from "@/lib/analytics/api";
 import type { AnalyticsPeriod, AnalyticsUrlDetail } from "@/lib/analytics/types";
 
 export default function LinkAnalyticsPage() {
@@ -23,7 +23,7 @@ export default function LinkAnalyticsPage() {
     setLoading(true);
     setError(null);
     try {
-      const detail = await getMockUrlAnalytics(shortCode, period);
+      const detail = await fetchUrlAnalytics(shortCode, period);
       setData(detail);
       setLastUpdated(new Date());
     } catch (err) {
@@ -42,7 +42,7 @@ export default function LinkAnalyticsPage() {
   return (
     <DashboardShell
       title={shortCode || "Link"}
-      subtitle={data?.url.originalUrl ?? "Sample link analytics"}
+      subtitle={data?.url.originalUrl ?? "Link analytics"}
       period={period}
       onPeriodChange={setPeriod}
       onRefresh={load}
