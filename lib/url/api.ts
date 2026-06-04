@@ -49,22 +49,30 @@ export type GetAllUrlsResponse = {
   total: number;
 };
 
-async function urlFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
+async function urlFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
   console.log("Fetching URL:", url);
   console.log("API URL from site:", site.apiUrl);
 
+  const baseHeaders: Record<string, string> = { Accept: "application/json" };
+
+  // Merge init.headers safely (HeadersInit can be Headers, string[][], or Record)
+  if (init?.headers) {
+    const headers = new Headers(init.headers as HeadersInit);
+    headers.forEach((value, key) => {
+      baseHeaders[key] = value;
+    });
+  }
+
+  // Only set Content-Type when sending a body or when method is not GET
+  if ((init?.method && init.method.toUpperCase() !== "GET") || init?.body) {
+    baseHeaders["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(url, {
     ...init,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...init?.headers,
-    },
+    headers: baseHeaders,
   });
 
   if (res.status === 401) {
@@ -87,7 +95,12 @@ async function urlFetch<T>(
     );
   }
 
-  if (body && typeof body === "object" && "data" in body && body.data !== undefined) {
+  if (
+    body &&
+    typeof body === "object" &&
+    "data" in body &&
+    body.data !== undefined
+  ) {
     return body.data as T;
   }
 

@@ -37,7 +37,13 @@ async function analyticsFetch<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
-  const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
+  // Use relative URLs when running in the browser so requests remain same-origin
+  // (this allows a Next.js rewrite/proxy to forward them to the real API and
+  // keeps cookies/auth working). On the server, use the configured API URL.
+  const isClient = typeof window !== "undefined";
+  const url = isClient
+    ? (path.startsWith("/") ? path : `/${path}`)
+    : `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
   const res = await fetch(url, {
     ...init,

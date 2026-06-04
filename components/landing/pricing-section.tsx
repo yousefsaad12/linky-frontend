@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { site } from "@/lib/site";
+import AuthButton from "@/components/ui/auth-button";
 
 const plans = [
   {
@@ -185,17 +186,18 @@ function MotionPricingCard({
           </li>
         ))}
       </ul>
-      <a
-        href={site.auth.signIn}
+      <AuthButton
         className={`w-full py-4 flex items-center justify-center gap-2 text-sm font-medium transition-all group ${
           plan.popular
             ? "bg-foreground text-primary-foreground hover:bg-foreground/90"
             : "border border-foreground/20 text-foreground hover:border-foreground hover:bg-foreground/5"
         }`}
       >
-        {plan.cta}
-        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-      </a>
+        <>
+          {plan.cta}
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+        </>
+      </AuthButton>
     </div>
   );
 }

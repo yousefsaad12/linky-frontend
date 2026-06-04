@@ -10,7 +10,6 @@ import { AuthApiError } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 const navLinks = [
- 
   { name: "Features", href: "#features" },
   { name: "How it works", href: "#how-it-works" },
   { name: "Analytics", href: "#analytics" },
@@ -85,10 +84,16 @@ export function Navigation() {
             >
               {site.name}
             </span>
-            
           </a>
 
-          <DesktopNav isScrolled={isScrolled} isAuthenticated={isAuthenticated} user={user} loading={loading} onSignIn={handleSignIn} onLogout={handleLogout} />
+          <DesktopNav
+            isScrolled={isScrolled}
+            isAuthenticated={isAuthenticated}
+            user={user}
+            loading={loading}
+            onSignIn={handleSignIn}
+            onLogout={handleLogout}
+          />
 
           <button
             type="button"
@@ -143,7 +148,9 @@ export function Navigation() {
             style={{ transitionDelay: isMobileMenuOpen ? "300ms" : "0ms" }}
           >
             {loading ? (
-              <div className="flex-1 text-center text-foreground/50">Loading...</div>
+              <div className="flex-1 text-center text-foreground/50">
+                Loading...
+              </div>
             ) : isAuthenticated ? (
               <>
                 <Button
@@ -151,7 +158,7 @@ export function Navigation() {
                   asChild
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <a href="/dashboard/profile">
+                  <a href="/profile">
                     <User className="h-4 w-4 mr-2" />
                     {user?.name || user?.email || "Profile"}
                   </a>
@@ -170,15 +177,16 @@ export function Navigation() {
             ) : (
               <Button
                 className="flex-1 bg-black text-white rounded-full h-14 text-base"
-                onClick={() => {
-                  handleSignIn();
-                  setIsMobileMenuOpen(false);
-                }}
+                asChild
               >
-                Sign in
+                <a
+                  href={site.auth.signIn}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sign in
+                </a>
               </Button>
             )}
-
           </div>
         </div>
       </div>
@@ -186,7 +194,21 @@ export function Navigation() {
   );
 }
 
-function DesktopNav({ isScrolled, isAuthenticated, user, loading, onSignIn, onLogout }: { isScrolled: boolean; isAuthenticated: boolean; user: any; loading: boolean; onSignIn: () => void; onLogout: () => Promise<void> }) {
+function DesktopNav({
+  isScrolled,
+  isAuthenticated,
+  user,
+  loading,
+  onSignIn,
+  onLogout,
+}: {
+  isScrolled: boolean;
+  isAuthenticated: boolean;
+  user: any;
+  loading: boolean;
+  onSignIn: () => void;
+  onLogout: () => Promise<void>;
+}) {
   return (
     <>
       <div className="hidden md:flex items-center gap-12">
@@ -213,7 +235,7 @@ function DesktopNav({ isScrolled, isAuthenticated, user, loading, onSignIn, onLo
               className={`rounded-full transition-all duration-500 ${isScrolled ? "px-4 h-8 text-xs" : "px-5 h-10 text-sm"}`}
               asChild
             >
-              <a href="/dashboard/profile">
+              <a href="/profile">
                 <User className="h-4 w-4 mr-2" />
                 {user?.name || user?.email || "Profile"}
               </a>
@@ -233,9 +255,9 @@ function DesktopNav({ isScrolled, isAuthenticated, user, loading, onSignIn, onLo
             variant="outline"
             size="sm"
             className={`rounded-full transition-all duration-500 ${isScrolled ? "px-4 h-8 text-xs" : "px-5 h-10 text-sm"}`}
-            onClick={onSignIn}
+            asChild
           >
-            Sign in
+            <a href={site.auth.signIn}>Sign in</a>
           </Button>
         )}
       </div>

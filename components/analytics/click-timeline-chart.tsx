@@ -102,11 +102,11 @@ export function ClickTimelineChart({
           </linearGradient>
         </defs>
 
-        {yTicks.map((tick) => {
+        {yTicks.map((tick, index) => {
           const y = padding.top + innerH - (tick / max) * innerH;
           return (
             <line
-              key={tick}
+              key={`${tick} - ${index}`}
               x1={padding.left}
               x2={width - padding.right}
               y1={y}
@@ -161,11 +161,11 @@ export function ClickTimelineChart({
           );
         })}
 
-        {yTicks.map((tick) => {
+        {yTicks.map((tick, index) => {
           const y = padding.top + innerH - (tick / max) * innerH;
           return (
             <text
-              key={`y-${tick}`}
+              key={`y-${tick}-${index}`}
               x={padding.left - 6}
               y={y + 3}
               textAnchor="end"

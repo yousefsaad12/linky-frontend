@@ -16,10 +16,7 @@ type ApiEnvelope<T> = {
   message?: string;
 };
 
-async function authFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
+async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
   const res = await fetch(url, {
@@ -48,7 +45,12 @@ async function authFetch<T>(
     );
   }
 
-  if (body && typeof body === "object" && "data" in body && body.data !== undefined) {
+  if (
+    body &&
+    typeof body === "object" &&
+    "data" in body &&
+    body.data !== undefined
+  ) {
     return body.data as T;
   }
 
@@ -59,6 +61,17 @@ export async function logout(): Promise<void> {
   await authFetch<void>("/api/v1/auth/logout", {
     method: "POST",
   });
+
+  // Clear client-side login timestamp so the frontend won't consider the
+  // user authenticated after server logout. `localStorage` is only
+  // available in the browser.
+  try {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("loginAt");
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export function getGoogleAuthUrl(): string {

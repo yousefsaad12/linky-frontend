@@ -9,6 +9,7 @@ const AnimatedTetrahedron = dynamic(
   { ssr: false },
 );
 import { site } from "@/lib/site";
+import AuthButton from "@/components/ui/auth-button";
 
 export function CtaSection() {
   const [isVisible, setIsVisible] = useState(false);
@@ -81,20 +82,17 @@ export function CtaSection() {
                 </h2>
 
                 <p className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-xl">
-                  Create a short link, share it, and get realtime click telemetry.
+                  Create a short link, share it, and get realtime click
+                  telemetry.
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-start gap-4">
-                  <Button
-                    size="lg"
-                    className="bg-foreground hover:bg-foreground/90 text-background px-8 h-14 text-base rounded-full group"
-                    asChild
-                  >
-                    <a href={site.auth.signIn}>
+                  <AuthButton className="bg-foreground hover:bg-foreground/90 text-background px-8 h-14 text-base rounded-full group">
+                    <>
                       Get started for free
                       <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-                    </a>
-                  </Button>
+                    </>
+                  </AuthButton>
                   <Button
                     size="lg"
                     variant="outline"

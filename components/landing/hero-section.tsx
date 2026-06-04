@@ -9,6 +9,7 @@ const AnimatedSphere = dynamic(
   { ssr: false },
 );
 import { site } from "@/lib/site";
+import AuthButton from "@/components/ui/auth-button";
 
 const words = ["create", "share", "see", "grow"];
 
@@ -99,16 +100,12 @@ export function HeroSection() {
                 : "opacity-0 translate-y-4"
             }`}
           >
-            <Button
-              size="lg"
-              className="bg-foreground hover:bg-foreground/90 text-background px-8 h-14 text-base rounded-full group"
-              asChild
-            >
-              <a href={site.auth.signIn}>
+            <AuthButton className="bg-foreground hover:bg-foreground/90 text-background px-8 h-14 text-base rounded-full group">
+              <>
                 Get started — Sign in
                 <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
-              </a>
-            </Button>
+              </>
+            </AuthButton>
             <Button
               size="lg"
               variant="outline"

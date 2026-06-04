@@ -31,14 +31,48 @@ export function ProfilePage() {
           credentials: "include",
           headers: {
             Accept: "application/json",
+            "Content-Type": "application/json",
           },
         });
 
         if (res.ok) {
-          const data = await res.json();
-          setProfile(data);
+          const json = await res.json();
+          // Backend may wrap payload in { data: { ... } }
+          const payload = json?.data ?? json;
+
+          const mapped: UserProfile = {
+            id: payload.id ?? payload._id ?? "",
+            email: payload.email ?? "",
+            name:
+              payload.name ??
+              payload.fullName ??
+              payload.displayName ??
+              undefined,
+            createdAt:
+              payload.createdAt ??
+              payload.created_at ??
+              payload.created ??
+              new Date().toISOString(),
+            totalLinks:
+              payload.totalLinks ??
+              payload.total_links ??
+              payload.stats?.totalLinks ??
+              payload.stats?.links ??
+              0,
+            totalClicks:
+              payload.totalClicks ??
+              payload.total_clicks ??
+              payload.stats?.totalClicks ??
+              payload.stats?.clicks ??
+              0,
+          };
+
+          setProfile(mapped);
+        } else if (res.status === 401) {
+          // Not authenticated — redirect to sign in
+          window.location.href = site.auth.signIn;
         } else {
-          // If profile endpoint doesn't exist, use mock data
+          // Fallback mock data
           setProfile({
             id: "user-1",
             email: "user@example.com",
@@ -107,15 +141,26 @@ export function ProfilePage() {
             Manage your account settings
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full font-mono text-xs"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-3.5 w-3.5 mr-1.5" />
-          Logout
-        </Button>
+        <div className="flex items-center">
+          <a href="/dashboard">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="rounded-full font-mono text-xs mr-2"
+            >
+              Dashboard
+            </Button>
+          </a>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full font-mono text-xs"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-3.5 w-3.5 mr-1.5" />
+            Logout
+          </Button>
+        </div>
       </div>
 
       <Card className="p-6 space-y-6">
@@ -130,32 +175,29 @@ export function ProfilePage() {
         </div>
 
         <div className="space-y-4 pt-4 border-t border-foreground/10">
-          <div className="flex items-center gap-3 text-sm">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Email:</span>
-            <span className="font-mono">{profile?.email}</span>
-          </div>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="px-3 py-4 rounded-md bg-muted/5">
+              <div className="text-sm text-muted-foreground">Links</div>
+              <div className="text-lg font-semibold">
+                {profile?.totalLinks ?? 0}
+              </div>
+            </div>
 
-          <div className="flex items-center gap-3 text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Member since:</span>
-            <span className="font-mono">
-              {profile?.createdAt
-                ? new Date(profile.createdAt).toLocaleDateString()
-                : "N/A"}
-            </span>
-          </div>
+            <div className="px-3 py-4 rounded-md bg-muted/5">
+              <div className="text-sm text-muted-foreground">Clicks</div>
+              <div className="text-lg font-semibold">
+                {profile?.totalClicks ?? 0}
+              </div>
+            </div>
 
-          <div className="flex items-center gap-3 text-sm">
-            <Settings className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Total links:</span>
-            <span className="font-mono">{profile?.totalLinks ?? 0}</span>
-          </div>
-
-          <div className="flex items-center gap-3 text-sm">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Total clicks:</span>
-            <span className="font-mono">{profile?.totalClicks ?? 0}</span>
+            <div className="px-3 py-4 rounded-md bg-muted/5">
+              <div className="text-sm text-muted-foreground">Member since</div>
+              <div className="text-lg font-semibold">
+                {profile?.createdAt
+                  ? new Date(profile.createdAt).toLocaleDateString()
+                  : "N/A"}
+              </div>
+            </div>
           </div>
         </div>
       </Card>

@@ -94,14 +94,16 @@ export function DashboardShell({
                   {title}
                 </h1>
                 {subtitle ? (
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {subtitle}
+                  </p>
                 ) : null}
               </div>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               {actions}
-              <Link href="/dashboard/profile">
+              <Link href="/profile">
                 <Button
                   type="button"
                   variant="outline"
@@ -145,7 +147,10 @@ export function DashboardShell({
           </div>
 
           {!onLinkDetail ? (
-            <nav className="flex flex-wrap gap-1" aria-label="Dashboard sections">
+            <nav
+              className="flex flex-wrap gap-1"
+              aria-label="Dashboard sections"
+            >
               {TABS.map((tab) => (
                 <Link
                   key={tab.id}

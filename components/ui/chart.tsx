@@ -5,7 +5,6 @@ import * as RechartsPrimitive from 'recharts'
 
 import { cn } from '@/lib/utils'
 
-// Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: '', dark: '.dark' } as const
 
 export type ChartConfig = {
@@ -26,11 +25,9 @@ const ChartContext = React.createContext<ChartContextProps | null>(null)
 
 function useChart() {
   const context = React.useContext(ChartContext)
-
   if (!context) {
     throw new Error('useChart must be used within a <ChartContainer />')
   }
-
   return context
 }
 
@@ -42,9 +39,7 @@ function ChartContainer({
   ...props
 }: React.ComponentProps<'div'> & {
   config: ChartConfig
-  children: React.ComponentProps<
-    typeof RechartsPrimitive.ResponsiveContainer
-  >['children']
+  children: React.ComponentProps<typeof RechartsPrimitive.ResponsiveContainer>['children']
 }) {
   const uniqueId = React.useId()
   const chartId = `chart-${id || uniqueId.replace(/:/g, '')}`
@@ -74,9 +69,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     ([, config]) => config.theme || config.color,
   )
 
-  if (!colorConfig.length) {
-    return null
-  }
+  if (!colorConfig.length) return null
 
   return (
     <style
@@ -104,6 +97,34 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip
 
+type ChartTooltipContentProps = {
+  active?: boolean
+  payload?: Array<{
+    dataKey?: string | number
+    name?: string
+    value?: number
+    color?: string
+    payload?: Record<string, unknown> & { fill?: string }
+  }>
+  label?: string
+  className?: string
+  indicator?: 'line' | 'dot' | 'dashed'
+  hideLabel?: boolean
+  hideIndicator?: boolean
+  labelFormatter?: (value: unknown, payload: unknown[]) => React.ReactNode
+  labelClassName?: string
+  formatter?: (
+    value: unknown,
+    name: string,
+    item: unknown,
+    index: number,
+    payload: unknown,
+  ) => React.ReactNode
+  color?: string
+  nameKey?: string
+  labelKey?: string
+}
+
 function ChartTooltipContent({
   active,
   payload,
@@ -118,20 +139,11 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-  React.ComponentProps<'div'> & {
-    hideLabel?: boolean
-    hideIndicator?: boolean
-    indicator?: 'line' | 'dot' | 'dashed'
-    nameKey?: string
-    labelKey?: string
-  }) {
+}: ChartTooltipContentProps) {
   const { config } = useChart()
 
   const tooltipLabel = React.useMemo(() => {
-    if (hideLabel || !payload?.length) {
-      return null
-    }
+    if (hideLabel || !payload?.length) return null
 
     const [item] = payload
     const key = `${labelKey || item?.dataKey || item?.name || 'value'}`
@@ -149,24 +161,12 @@ function ChartTooltipContent({
       )
     }
 
-    if (!value) {
-      return null
-    }
+    if (!value) return null
 
     return <div className={cn('font-medium', labelClassName)}>{value}</div>
-  }, [
-    label,
-    labelFormatter,
-    payload,
-    hideLabel,
-    labelClassName,
-    config,
-    labelKey,
-  ])
+  }, [label, labelFormatter, payload, hideLabel, labelClassName, config, labelKey])
 
-  if (!active || !payload?.length) {
-    return null
-  }
+  if (!active || !payload?.length) return null
 
   const nestLabel = payload.length === 1 && indicator !== 'dot'
 
@@ -182,7 +182,7 @@ function ChartTooltipContent({
         {payload.map((item, index) => {
           const key = `${nameKey || item.name || item.dataKey || 'value'}`
           const itemConfig = getPayloadConfigFromPayload(config, item, key)
-          const indicatorColor = color || item.payload.fill || item.color
+          const indicatorColor = color || item.payload?.fill || item.color
 
           return (
             <div
@@ -206,8 +206,7 @@ function ChartTooltipContent({
                           {
                             'h-2.5 w-2.5': indicator === 'dot',
                             'w-1': indicator === 'line',
-                            'w-0 border-[1.5px] border-dashed bg-transparent':
-                              indicator === 'dashed',
+                            'w-0 border-[1.5px] border-dashed bg-transparent': indicator === 'dashed',
                             'my-0.5': nestLabel && indicator === 'dashed',
                           },
                         )}
@@ -250,22 +249,28 @@ function ChartTooltipContent({
 
 const ChartLegend = RechartsPrimitive.Legend
 
+type LegendItem = {
+  value?: string
+  dataKey?: string
+  color?: string
+}
+
 function ChartLegendContent({
   className,
   hideIcon = false,
   payload,
   verticalAlign = 'bottom',
   nameKey,
-}: React.ComponentProps<'div'> &
-  Pick<RechartsPrimitive.LegendProps, 'payload' | 'verticalAlign'> & {
-    hideIcon?: boolean
-    nameKey?: string
-  }) {
+}: React.ComponentProps<'div'> & {
+  hideIcon?: boolean
+  nameKey?: string
+  verticalAlign?: 'top' | 'bottom' | 'middle'
+  payload?: LegendItem[]
+}) {
   const { config } = useChart()
+  const items = payload ?? []
 
-  if (!payload?.length) {
-    return null
-  }
+  if (!items.length) return null
 
   return (
     <div
@@ -275,7 +280,7 @@ function ChartLegendContent({
         className,
       )}
     >
-      {payload.map((item) => {
+      {items.map((item) => {
         const key = `${nameKey || item.dataKey || 'value'}`
         const itemConfig = getPayloadConfigFromPayload(config, item, key)
 
@@ -289,9 +294,7 @@ function ChartLegendContent({
             ) : (
               <div
                 className="h-2 w-2 shrink-0 rounded-[2px]"
-                style={{
-                  backgroundColor: item.color,
-                }}
+                style={{ backgroundColor: item.color }}
               />
             )}
             {itemConfig?.label}
@@ -302,15 +305,12 @@ function ChartLegendContent({
   )
 }
 
-// Helper to extract item config from a payload.
 function getPayloadConfigFromPayload(
   config: ChartConfig,
   payload: unknown,
   key: string,
 ) {
-  if (typeof payload !== 'object' || payload === null) {
-    return undefined
-  }
+  if (typeof payload !== 'object' || payload === null) return undefined
 
   const payloadPayload =
     'payload' in payload &&
@@ -321,19 +321,14 @@ function getPayloadConfigFromPayload(
 
   let configLabelKey: string = key
 
-  if (
-    key in payload &&
-    typeof payload[key as keyof typeof payload] === 'string'
-  ) {
+  if (key in payload && typeof payload[key as keyof typeof payload] === 'string') {
     configLabelKey = payload[key as keyof typeof payload] as string
   } else if (
     payloadPayload &&
     key in payloadPayload &&
     typeof payloadPayload[key as keyof typeof payloadPayload] === 'string'
   ) {
-    configLabelKey = payloadPayload[
-      key as keyof typeof payloadPayload
-    ] as string
+    configLabelKey = payloadPayload[key as keyof typeof payloadPayload] as string
   }
 
   return configLabelKey in config
