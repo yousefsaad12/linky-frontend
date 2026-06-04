@@ -33,18 +33,12 @@ type ApiEnvelope<T> = {
   message?: string;
 };
 
-async function analyticsFetch<T>(
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
+async function analyticsFetch<T>(path: string, init?: RequestInit): Promise<T> {
   // Use relative URLs when running in the browser so requests remain same-origin
   // (this allows a Next.js rewrite/proxy to forward them to the real API and
   // keeps cookies/auth working). On the server, use the configured API URL.
-  const isClient = typeof window !== "undefined";
-  const url = isClient
-    ? (path.startsWith("/") ? path : `/${path}`)
-    : `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
+  const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
   const res = await fetch(url, {
     ...init,
     credentials: "include",
@@ -63,7 +57,10 @@ async function analyticsFetch<T>(
     body = await res.json();
   } catch {
     if (!res.ok) {
-      throw new AnalyticsApiError(res.statusText || "Request failed", res.status);
+      throw new AnalyticsApiError(
+        res.statusText || "Request failed",
+        res.status,
+      );
     }
   }
 
@@ -74,14 +71,22 @@ async function analyticsFetch<T>(
     );
   }
 
-  if (body && typeof body === "object" && "data" in body && body.data !== undefined) {
+  if (
+    body &&
+    typeof body === "object" &&
+    "data" in body &&
+    body.data !== undefined
+  ) {
     return body.data as T;
   }
 
   return body as T;
 }
 
-function periodQuery(period: AnalyticsPeriod, extra?: Record<string, string | number>) {
+function periodQuery(
+  period: AnalyticsPeriod,
+  extra?: Record<string, string | number>,
+) {
   const params = new URLSearchParams({ period });
   if (extra) {
     for (const [key, value] of Object.entries(extra)) {
@@ -150,10 +155,10 @@ export async function fetchLinksTable(options: {
   if (options.sort) params.set("sort", options.sort);
 
   // Try /api/v1/url first (URL management endpoint)
-  let envelope = await fetch(
-    `${site.apiUrl}/api/v1/url?${params.toString()}`,
-    { credentials: "include", headers: { Accept: "application/json" } },
-  );
+  let envelope = await fetch(`${site.apiUrl}/api/v1/url?${params.toString()}`, {
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
 
   // If that fails with 404, try /api/v1/analytics/links
   if (envelope.status === 404) {
@@ -169,7 +174,7 @@ export async function fetchLinksTable(options: {
   }
 
   const json = await envelope.json();
-  
+
   // Transform URL list response to links table format
   const urls = json.data || json.urls || [];
   return {
