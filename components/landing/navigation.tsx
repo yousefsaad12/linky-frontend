@@ -27,32 +27,36 @@ export function Navigation() {
   const { toast } = useToast();
 
   const handleSignIn = () => {
-    window.location.href = site.auth.signIn;
-  };
-
+  const loggedOut = localStorage.getItem("loggedOut") === "true";
+  localStorage.removeItem("loggedOut");
+  window.location.href = loggedOut 
+    ? site.auth.signIn + "?prompt=select_account"
+    : site.auth.signIn;
+};
   const handleLogout = async () => {
-    try {
-      await logout();
+  try {
+    await logout();
+    toast({
+      title: "Logged out successfully",
+    });
+    localStorage.setItem("loggedOut", "true"); // 👈 add this
+    window.location.href = "/";
+  } catch (error) {
+    if (error instanceof AuthApiError) {
       toast({
-        title: "Logged out successfully",
+        title: "Logout failed",
+        description: error.message,
+        variant: "destructive",
       });
-      window.location.href = "/";
-    } catch (error) {
-      if (error instanceof AuthApiError) {
-        toast({
-          title: "Logout failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-      }
+    } else {
+      toast({
+        title: "Error",
+        description: "Something went wrong",
+        variant: "destructive",
+      });
     }
-  };
+  }
+};
 
   useEffect(() => {
     const handleScroll = () => {
