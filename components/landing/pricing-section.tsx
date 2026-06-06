@@ -1,43 +1,46 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Check } from "lucide-react";
-import { site } from "@/lib/site";
+import { ArrowRight } from "lucide-react";
 import AuthButton from "@/components/ui/auth-button";
 
 const plans = [
   {
     name: "Free",
-    description: "Get started, no card needed",
+    description: "Perfect for personal projects",
     price: { monthly: 0, annual: 0 },
     features: [
       "500 short links",
-      "90 days of click history",
+      "90 days click history",
       "Device + country analytics",
       "Google sign-in",
     ],
-    cta: "Get started",
+    cta: "Get started free",
     popular: false,
+    highlight: "No credit card required",
+    variant: "outline" as const,
   },
   {
     name: "Pro",
-    description: "For businesses that need more power",
+    description: "For growing businesses",
     price: { monthly: 7, annual: 5 },
     features: [
       "Unlimited short links",
       "3 custom domains",
-      "1 year of click history",
+      "1 year click history",
       "City-level + device analytics",
-      "API keys and scoped access",
+      "API keys + scoped access",
       "Webhooks for realtime events",
       "Priority support",
     ],
-    cta: "Start free trial",
+    cta: "Start 14-day trial",
     popular: true,
+    highlight: "Billed annually · 14-day free trial",
+    variant: "solid" as const,
   },
   {
     name: "Team",
-    description: "For teams that work together",
+    description: "For collaborative teams",
     price: { monthly: 25, annual: 20 },
     features: [
       "Everything in Pro",
@@ -48,37 +51,44 @@ const plans = [
       "99.9% uptime SLA",
       "Dedicated onboarding",
     ],
-    cta: "Contact us",
+    cta: "Contact sales",
     popular: false,
+    highlight: "Billed annually · Enterprise features",
+    variant: "outline" as const,
   },
 ];
+
+// The longest plan feature count — used to pad shorter lists
+const MAX_FEATURES = Math.max(...plans.map((p) => p.features.length));
+
 export function PricingSection() {
   const [isAnnual, setIsAnnual] = useState(true);
 
   return (
-    <section
-      id="pricing"
-      className="relative py-32 lg:py-40 border-t border-foreground/10"
-    >
-      <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <div className="max-w-3xl mb-20">
-          <span className="font-mono text-xs tracking-widest text-muted-foreground uppercase block mb-6">
-            Pricing
+    <section id="pricing" className="relative py-32 lg:py-40 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-foreground/5 to-transparent" />
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-12 relative">
+        {/* Header */}
+        <div className="text-center mb-20">
+          <span className="inline-flex items-center gap-2 px-4 py-2 bg-foreground/5 rounded-full text-xs font-mono text-muted-foreground mb-6">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            Simple, transparent pricing
           </span>
           <h2 className="font-display text-5xl md:text-6xl lg:text-7xl tracking-tight text-foreground mb-6">
-            Start free.
+            Pricing that scales
             <br />
-            <span className="text-stroke">Scale with links.</span>
+            <span className="text-stroke">with your success.</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-xl">
-            Only pay when you want more links or longer history. Shortening
-            stays easy.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Start free, upgrade when you're ready. No hidden fees, no surprises.
           </p>
         </div>
 
-        <div className="flex items-center gap-4 mb-16">
+        {/* Toggle */}
+        <div className="flex items-center justify-center gap-4 mb-16">
           <span
-            className={`text-sm transition-colors ${
+            className={`text-sm font-medium transition-colors ${
               !isAnnual ? "text-foreground" : "text-muted-foreground"
             }`}
           >
@@ -87,110 +97,130 @@ export function PricingSection() {
           <button
             type="button"
             onClick={() => setIsAnnual(!isAnnual)}
-            className="relative w-14 h-7 bg-foreground/10 rounded-full p-1 transition-colors hover:bg-foreground/20"
+            className="relative w-16 h-8 bg-foreground/10 rounded-full p-1 transition-colors hover:bg-foreground/20"
+            aria-label="Toggle billing period"
           >
-            <MotionPricingToggle isAnnual={isAnnual} />
+            <div
+              className={`w-6 h-6 bg-foreground rounded-full shadow-lg transition-transform duration-300 ${
+                isAnnual ? "translate-x-8" : "translate-x-0"
+              }`}
+            />
           </button>
           <span
-            className={`text-sm transition-colors ${
+            className={`text-sm font-medium transition-colors ${
               isAnnual ? "text-foreground" : "text-muted-foreground"
             }`}
           >
             Annual
           </span>
           {isAnnual && (
-            <span className="ml-2 px-2 py-1 bg-foreground text-primary-foreground text-xs font-mono">
-              Save 17%
+            <span className="ml-2 px-3 py-1 bg-green-500/10 text-green-500 border border-green-500/20 text-xs font-mono rounded-full">
+              Save 28%
             </span>
           )}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-px bg-foreground/10">
-          {plans.map((plan, idx) => (
-            <MotionPricingCard
-              key={plan.name}
-              plan={plan}
-              idx={idx}
-              isAnnual={isAnnual}
-            />
+        {/* Cards */}
+        <div className="grid md:grid-cols-3 max-w-6xl mx-auto border border-foreground/10 rounded-2xl overflow-hidden divide-x divide-foreground/10">
+          {plans.map((plan) => (
+            <PlanCard key={plan.name} plan={plan} isAnnual={isAnnual} />
           ))}
         </div>
 
-        <p className="mt-12 text-center text-sm text-muted-foreground">
-          Some Pro & Team features are roadmap items — sign in to try core
-          functionality for free.
-        </p>
+        {/* Footer */}
+        <div className="mt-20 text-center">
+          <p className="text-sm text-muted-foreground mb-4">
+            All plans include core features like instant redirects, real-time
+            analytics, and API access.
+          </p>
+          <div className="flex items-center justify-center gap-8 text-xs text-muted-foreground">
+            {["Cancel anytime", "No hidden fees", "99.9% uptime"].map((item) => (
+              <span key={item} className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-function MotionPricingToggle({ isAnnual }: { isAnnual: boolean }) {
-  return (
-    <div
-      className={`w-5 h-5 bg-foreground rounded-full transition-transform duration-300 ${
-        isAnnual ? "translate-x-7" : "translate-x-0"
-      }`}
-    />
-  );
-}
-
-function MotionPricingCard({
+function PlanCard({
   plan,
-  idx,
   isAnnual,
 }: {
   plan: (typeof plans)[0];
-  idx: number;
   isAnnual: boolean;
 }) {
+  const price = isAnnual ? plan.price.annual : plan.price.monthly;
+
+  // Pad features so all cards have the same number of rows
+  const paddedFeatures = [
+    ...plan.features,
+    ...Array(MAX_FEATURES - plan.features.length).fill(null),
+  ];
+
   return (
     <div
-      className={`relative p-8 lg:p-12 bg-background ${
-        plan.popular
-          ? "md:-my-4 md:py-12 lg:py-16 border-2 border-foreground"
-          : ""
+      className={`flex flex-col p-8 ${
+        plan.popular ? "bg-foreground/5" : "bg-background"
       }`}
     >
-      {plan.popular && (
-        <span className="absolute -top-3 left-8 px-3 py-1 bg-foreground text-primary-foreground text-xs font-mono uppercase tracking-widest">
-          Most Popular
-        </span>
-      )}
-      <div className="mb-8">
-        <span className="font-mono text-xs text-muted-foreground">
-          {String(idx + 1).padStart(2, "0")}
-        </span>
-        <h3 className="font-display text-3xl text-foreground mt-2">
-          {plan.name}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
-      </div>
-      <div className="mb-8 pb-8 border-b border-foreground/10">
-        {plan.price.monthly !== null ? (
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl lg:text-6xl text-foreground">
-              ${isAnnual ? plan.price.annual : plan.price.monthly}
-            </span>
-            <span className="text-muted-foreground">/month</span>
-          </div>
-        ) : (
-          <span className="font-display text-4xl text-foreground">Custom</span>
+      {/* Badge */}
+      <div className="h-7 mb-4">
+        {plan.popular && (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-mono bg-foreground/10 text-foreground">
+            Most popular
+          </span>
         )}
       </div>
-      <ul className="space-y-4 mb-10">
-        {plan.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-3">
-            <Check className="w-4 h-4 text-foreground mt-0.5 shrink-0" />
-            <span className="text-sm text-muted-foreground">{feature}</span>
+
+      {/* Name + description */}
+      <h3 className="font-display text-2xl text-foreground">{plan.name}</h3>
+      <p className="text-sm text-muted-foreground mt-1 mb-6">
+        {plan.description}
+      </p>
+
+      {/* Price */}
+      <div className="mb-2">
+        <div className="flex items-baseline gap-1">
+          <span className="font-display text-5xl text-foreground">${price}</span>
+          <span className="text-muted-foreground text-sm">/month</span>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground mb-6">{plan.highlight}</p>
+
+      <hr className="border-foreground/10 mb-6" />
+
+      {/* Features — fixed height rows so buttons always align */}
+      <ul className="flex-1 space-y-0 mb-8">
+        {paddedFeatures.map((feature, i) => (
+          <li
+            key={i}
+            className="flex items-center gap-2 py-2.5 border-b border-foreground/5 last:border-0 text-sm"
+          >
+            {feature ? (
+              <>
+                <span className="w-4 h-4 rounded-full bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-foreground/60" />
+                </span>
+                <span className="text-muted-foreground">{feature}</span>
+              </>
+            ) : (
+              <span className="invisible text-sm">—</span>
+            )}
           </li>
         ))}
       </ul>
+
+      {/* CTA — always at bottom */}
       <AuthButton
-        className={`w-full py-4 flex items-center justify-center gap-2 text-sm font-medium transition-all group ${
-          plan.popular
-            ? "bg-foreground text-primary-foreground hover:bg-foreground/90"
-            : "border border-foreground/20 text-foreground hover:border-foreground hover:bg-foreground/5"
+        className={`w-full py-3 flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-all group ${
+          plan.variant === "solid"
+            ? "bg-foreground text-background hover:bg-foreground/90"
+            : "bg-transparent border border-foreground/20 text-foreground hover:bg-foreground/5"
         }`}
       >
         <>

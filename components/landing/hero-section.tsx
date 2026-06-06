@@ -60,7 +60,6 @@ export function HeroSection() {
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
             }`}
-            style={{ contain: 'layout style paint' }}
           >
             <span className="block">Short links</span>
             <span className="block">
@@ -151,7 +150,7 @@ export function HeroSection() {
 
 function MotionSphereBackground() {
   return (
-    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[600px] h-[600px] lg:w-[800px] lg:h-[800px] opacity-40 pointer-events-none" aria-hidden="true" style={{ contain: 'layout paint' }}>
+    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[600px] h-[600px] lg:w-[800px] lg:h-[800px] opacity-40 pointer-events-none" aria-hidden="true">
       <AnimatedSphere />
     </div>
   );

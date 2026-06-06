@@ -152,7 +152,7 @@ export function HowItWorksSection() {
                     Short URL preview
                   </p>
                   <div className="rounded-2xl border border-background/10 px-4 py-3 text-sm text-background/80">
-                    {shortCode ? `linky/${shortCode}` : "linky/abc123"}
+                    {shortCode ? `lnqo/${shortCode}` : "lnqo/abc123"}
                   </div>
                 </div>
 
