@@ -69,7 +69,9 @@ export function useAuth() {
       }
 
       try {
-        console.log("Checking auth at:", `${site.apiUrl}/api/v1/auth/me`);
+        if (process.env.NODE_ENV !== "production") {
+          console.debug("Checking auth at:", `${site.apiUrl}/api/v1/auth/me`);
+        }
 
         const res = await fetch(`${site.apiUrl}/api/v1/auth/me`, {
           method: "GET",
@@ -79,7 +81,9 @@ export function useAuth() {
           },
         });
 
-        console.log("Auth response status:", res.status);
+        if (process.env.NODE_ENV !== "production") {
+          console.debug("Auth response status:", res.status);
+        }
 
         if (res.ok) {
           const json = await res.json();
@@ -92,7 +96,10 @@ export function useAuth() {
           }
 
           // Some backends nest the user under `user`.
-          const userPayload = payload && typeof payload === "object" ? payload.user ?? payload : null;
+          const userPayload =
+            payload && typeof payload === "object"
+              ? (payload.user ?? payload)
+              : null;
 
           // Guard against missing payload
           if (!userPayload || (!userPayload.id && !userPayload._id)) {
@@ -103,10 +110,12 @@ export function useAuth() {
             const realUser: User = {
               id: String(userPayload.id ?? userPayload._id ?? ""),
               email: String(userPayload.email ?? ""),
-              name: userPayload.name ?? userPayload.fullName ?? "Linky User",
+              name: userPayload.name ?? userPayload.fullName ?? "lnqo User",
             };
 
-            console.log("User authenticated successfully:", realUser);
+            if (process.env.NODE_ENV !== "production") {
+              console.debug("User authenticated successfully:", realUser);
+            }
             setUser(realUser);
             setIsAuthenticated(true);
             try {
@@ -118,11 +127,11 @@ export function useAuth() {
             }
           }
         } else if (res.status === 401) {
-          console.log("Not authenticated (401)");
+          console.warn("Not authenticated (401)");
           setUser(null);
           setIsAuthenticated(false);
         } else {
-          console.log("Auth check failed with status:", res.status);
+          console.error("Auth check failed with status:", res.status);
           setUser(null);
           setIsAuthenticated(false);
         }

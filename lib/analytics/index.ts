@@ -1,7 +1,7 @@
 export * from "./types";
 export * from "./format";
 export * from "./constants";
-export * from "./mock-data";
 export * from "./api";
 export * from "./normalize";
-export * from "./mock-service";
+// Note: mock-data and mock-service moved to ./dev to avoid accidental production bundling.
+// Import them explicitly from ./dev in development-only components.

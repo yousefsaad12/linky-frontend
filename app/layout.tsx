@@ -5,30 +5,43 @@ import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
-const instrumentSans = Instrument_Sans({ 
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
   variable: '--font-instrument',
   display: 'swap',
+  preload: true,
 });
 
-const instrumentSerif = Instrument_Serif({ 
+const instrumentSerif = Instrument_Serif({
   subsets: ["latin"],
   weight: "400",
   variable: '--font-instrument-serif',
   display: 'swap',
+  preload: false,
 });
 
-const jetbrainsMono = JetBrains_Mono({ 
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: '--font-jetbrains',
   display: 'swap',
+  preload: false,
 });
 
 export const metadata: Metadata = {
-  title: 'Linky — Developer-first link analytics',
+  title: 'lnqo — Developer-first link analytics',
   description:
     'Short links with fast redirects, rich click analytics, and a REST API for developers. Device, geo, referrer breakdowns—and webhooks on the roadmap.',
   icons: { icon: '/icon.svg' },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+  },
+  other: {
+    'dns-prefetch': 'https://cdn.vercel-insights.com',
+    'preconnect': 'https://cdn.vercel-insights.com',
+  },
+  generator: '',
 }
 
 export default function RootLayout({
@@ -37,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${instrumentSans.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
         {children}
         <Analytics />

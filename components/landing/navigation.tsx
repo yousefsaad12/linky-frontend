@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { site } from "@/lib/site";
 import { useAuth } from "@/hooks/use-auth";
 import { logout } from "@/lib/auth";
 import { AuthApiError } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+
+const Button = dynamic(() => import("@/components/ui/button").then(mod => ({ default: mod.Button })), { ssr: true });
 
 const navLinks = [
   { name: "Features", href: "#features" },

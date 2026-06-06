@@ -2,7 +2,7 @@ import dynamic from "next/dynamic";
 import { Navigation } from "@/components/landing/navigation";
 import { HeroSection } from "@/components/landing/hero-section";
 
-// Lazy load heavy sections below the fold
+// Lazy load heavy sections below the fold with prefetching
 const FeaturesSection = dynamic(() => import("@/components/landing/features-section").then(mod => ({ default: mod.FeaturesSection })), { loading: () => <div className="h-screen" /> });
 const HowItWorksSection = dynamic(() => import("@/components/landing/how-it-works-section").then(mod => ({ default: mod.HowItWorksSection })), { loading: () => <div className="h-screen" /> });
 const MetricsSection = dynamic(() => import("@/components/landing/metrics-section").then(mod => ({ default: mod.MetricsSection })), { loading: () => <div className="h-screen" /> });

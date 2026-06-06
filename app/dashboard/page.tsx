@@ -2,14 +2,17 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { DashboardShell, type DashboardTab } from "@/components/dashboard/dashboard-shell";
-import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
-import { LinksTablePanel } from "@/components/dashboard/links-table-panel";
-import { LiveClicksFeed } from "@/components/dashboard/live-clicks-feed";
-import { LinkComparisonPanel } from "@/components/dashboard/link-comparison-panel";
 import { DashboardError, DashboardLoading } from "@/components/dashboard/dashboard-states";
 import { useDashboardData } from "@/features/dashboard";
 import type { AnalyticsPeriod } from "@/lib/analytics/types";
+
+// Lazy load heavy dashboard components
+const DashboardOverview = dynamic(() => import("@/components/dashboard/dashboard-overview").then(mod => ({ default: mod.DashboardOverview })), { ssr: true });
+const LinksTablePanel = dynamic(() => import("@/components/dashboard/links-table-panel").then(mod => ({ default: mod.LinksTablePanel })), { ssr: true });
+const LiveClicksFeed = dynamic(() => import("@/components/dashboard/live-clicks-feed").then(mod => ({ default: mod.LiveClicksFeed })), { ssr: true });
+const LinkComparisonPanel = dynamic(() => import("@/components/dashboard/link-comparison-panel").then(mod => ({ default: mod.LinkComparisonPanel })), { ssr: true });
 
 function parseTab(value: string | null): DashboardTab {
   if (value === "links" || value === "compare" || value === "live") return value;

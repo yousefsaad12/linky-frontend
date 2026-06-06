@@ -15,22 +15,26 @@ const AnalyticsDashboard = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="min-h-[420px] animate-pulse rounded-lg bg-foreground/[0.03]" aria-hidden />
+      <div
+        className="min-h-[420px] animate-pulse rounded-lg bg-foreground/[0.03]"
+        aria-hidden
+      />
     ),
   },
 );
-import {
-  MOCK_ANALYTICS_BY_PERIOD,
-  MOCK_RECENT_CLICKS,
-} from "@/lib/analytics/mock-data";
 import type { AnalyticsPeriod } from "@/lib/analytics/types";
+import { fetchAnalyticsOverview, fetchRecentClicks } from "@/lib/analytics";
 
 export function AnalyticsSection() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("7d");
   const [isVisible, setIsVisible] = useState(false);
+  const [serverData, setServerData] = useState<any | null>(null);
+  const [serverRecent, setServerRecent] = useState<any[] | null>(null);
+  const [loadingServer, setLoadingServer] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
 
-  const data = MOCK_ANALYTICS_BY_PERIOD[period];
+  const data = serverData ? serverData : undefined;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -43,6 +47,32 @@ export function AnalyticsSection() {
     if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    let mounted = true;
+    (async () => {
+      setLoadingServer(true);
+      setServerError(null);
+      try {
+        const overview = await fetchAnalyticsOverview(period);
+        const recent = await fetchRecentClicks({ limit: 5 });
+        if (!mounted) return;
+        setServerData(overview);
+        setServerRecent(recent);
+      } catch (err: any) {
+        if (!mounted) return;
+        setServerError(err?.message ?? String(err));
+      } finally {
+        if (mounted) setLoadingServer(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isVisible, period]);
 
   return (
     <section
@@ -75,7 +105,6 @@ export function AnalyticsSection() {
               }`}
             >
               KPIs, timeline, top links, and breakdowns — same shape as{" "}
-
             </p>
           </div>
 
@@ -97,14 +126,19 @@ export function AnalyticsSection() {
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          {isVisible ? (
+          {isVisible && data ? (
             <AnalyticsDashboard
               data={data}
-              recentClicks={MOCK_RECENT_CLICKS}
+              recentClicks={serverRecent ?? undefined}
               variant="compact"
               period={period}
               onPeriodChange={setPeriod}
               showPeriodSelector={false}
+            />
+          ) : isVisible && loadingServer ? (
+            <div
+              className="min-h-[420px] animate-pulse rounded-lg bg-foreground/[0.03]"
+              aria-hidden
             />
           ) : (
             <div

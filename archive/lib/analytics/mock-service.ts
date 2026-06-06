@@ -5,7 +5,7 @@ import type {
   AnalyticsRecentClick,
   AnalyticsUrlDetail,
   LinkComparisonEntry,
-} from "./types";
+} from "../types";
 import {
   MOCK_ANALYTICS_BY_PERIOD,
   MOCK_LINKS_CATALOG,
@@ -46,7 +46,9 @@ export async function getMockRecentClicks(options?: {
   return rows.slice(0, limit);
 }
 
-export async function getMockLiveClicks(limit = 30): Promise<AnalyticsRecentClick[]> {
+export async function getMockLiveClicks(
+  limit = 30,
+): Promise<AnalyticsRecentClick[]> {
   await delay();
   return MOCK_LIVE_CLICKS.slice(0, limit);
 }
@@ -92,17 +94,13 @@ export async function getMockUrlAnalytics(
     return { ...preset, period };
   }
 
-  const row = MOCK_LINKS_CATALOG.find(
-    (l) => l.shortCode.toLowerCase() === key,
-  );
+  const row = MOCK_LINKS_CATALOG.find((l) => l.shortCode.toLowerCase() === key);
   if (!row) {
     throw new Error("Short URL not found");
   }
 
   const overview = MOCK_ANALYTICS_BY_PERIOD[period];
-  const top = overview.topLinks.find(
-    (l) => l.shortCode.toLowerCase() === key,
-  );
+  const top = overview.topLinks.find((l) => l.shortCode.toLowerCase() === key);
   const clicksInPeriod = top?.clicks ?? Math.round(row.clicks * 0.12);
 
   return {
@@ -121,7 +119,12 @@ export async function getMockUrlAnalytics(
     },
     timeline: overview.timeline.map((p) => ({
       ...p,
-      clicks: Math.max(1, Math.round(p.clicks * (clicksInPeriod / overview.summary.clicksInPeriod) * 0.5)),
+      clicks: Math.max(
+        1,
+        Math.round(
+          p.clicks * (clicksInPeriod / overview.summary.clicksInPeriod) * 0.5,
+        ),
+      ),
     })),
     breakdowns: MOCK_URL_ANALYTICS.k9xm["7d"].breakdowns,
   };
@@ -152,7 +155,9 @@ export async function getMockLinkComparison(
     shortCodes && shortCodes.length > 0
       ? shortCodes
           .map((code) =>
-            candidates.find((c) => c.shortCode.toLowerCase() === code.toLowerCase()),
+            candidates.find(
+              (c) => c.shortCode.toLowerCase() === code.toLowerCase(),
+            ),
           )
           .filter((c): c is (typeof candidates)[0] => Boolean(c))
       : candidates.slice(0, 3);

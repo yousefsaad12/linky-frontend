@@ -1,6 +1,6 @@
-# Linky — Landing UI
+# lnqo — Landing UI
 
-Marketing site for [Linky](../URLShortener): developer-first link analytics.
+Marketing site for [lnqo](../URLShortener): developer-first link analytics.
 
 ## Setup
 

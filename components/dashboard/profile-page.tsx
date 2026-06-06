@@ -1,104 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { User, Mail, Calendar, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { site } from "@/lib/site";
 import { logout } from "@/lib/auth";
 import { AuthApiError } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
-
-interface UserProfile {
-  id: string;
-  email: string;
-  name?: string;
-  createdAt: string;
-  totalLinks?: number;
-  totalClicks?: number;
-}
+import { useAuth } from "@/hooks/use-auth";
 
 export function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch(`${site.apiUrl}/api/v1/auth/me`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (res.ok) {
-          const json = await res.json();
-          // Backend may wrap payload in { data: { ... } }
-          const payload = json?.data ?? json;
-
-          const mapped: UserProfile = {
-            id: payload.id ?? payload._id ?? "",
-            email: payload.email ?? "",
-            name:
-              payload.name ??
-              payload.fullName ??
-              payload.displayName ??
-              undefined,
-            createdAt:
-              payload.createdAt ??
-              payload.created_at ??
-              payload.created ??
-              new Date().toISOString(),
-            totalLinks:
-              payload.totalLinks ??
-              payload.total_links ??
-              payload.stats?.totalLinks ??
-              payload.stats?.links ??
-              0,
-            totalClicks:
-              payload.totalClicks ??
-              payload.total_clicks ??
-              payload.stats?.totalClicks ??
-              payload.stats?.clicks ??
-              0,
-          };
-
-          setProfile(mapped);
-        } else if (res.status === 401) {
-          // Not authenticated — redirect to sign in
-          window.location.href = site.auth.signIn;
-        } else {
-          // Fallback mock data
-          setProfile({
-            id: "user-1",
-            email: "user@example.com",
-            name: "User",
-            createdAt: new Date().toISOString(),
-            totalLinks: 0,
-            totalClicks: 0,
-          });
-        }
-      } catch (error) {
-        // On error, use mock data
-        setProfile({
-          id: "user-1",
-          email: "user@example.com",
-          name: "User",
-          createdAt: new Date().toISOString(),
-          totalLinks: 0,
-          totalClicks: 0,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -124,7 +37,7 @@ export function ProfilePage() {
     }
   };
 
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-sm text-muted-foreground">Loading profile...</div>
@@ -169,33 +82,17 @@ export function ProfilePage() {
             <User className="h-8 w-8 text-foreground/60" />
           </div>
           <div>
-            <h3 className="font-display text-lg">{profile?.name || "User"}</h3>
-            <p className="text-sm text-muted-foreground">{profile?.email}</p>
+            <h3 className="font-display text-lg">{user?.name || "User"}</h3>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>
 
         <div className="space-y-4 pt-4 border-t border-foreground/10">
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="px-3 py-4 rounded-md bg-muted/5">
-              <div className="text-sm text-muted-foreground">Links</div>
-              <div className="text-lg font-semibold">
-                {profile?.totalLinks ?? 0}
-              </div>
-            </div>
-
-            <div className="px-3 py-4 rounded-md bg-muted/5">
-              <div className="text-sm text-muted-foreground">Clicks</div>
-              <div className="text-lg font-semibold">
-                {profile?.totalClicks ?? 0}
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 gap-4 text-center">
             <div className="px-3 py-4 rounded-md bg-muted/5">
               <div className="text-sm text-muted-foreground">Member since</div>
               <div className="text-lg font-semibold">
-                {profile?.createdAt
-                  ? new Date(profile.createdAt).toLocaleDateString()
-                  : "N/A"}
+                {user ? "N/A" : "N/A"}
               </div>
             </div>
           </div>

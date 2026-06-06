@@ -51,8 +51,10 @@ export type GetAllUrlsResponse = {
 
 async function urlFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
-  console.log("Fetching URL:", url);
-  console.log("API URL from site:", site.apiUrl);
+  if (process.env.NODE_ENV !== "production") {
+    console.debug("Fetching URL:", url);
+    console.debug("API URL from site:", site.apiUrl);
+  }
 
   const baseHeaders: Record<string, string> = { Accept: "application/json" };
 

@@ -150,20 +150,18 @@
   .animate-char-in {
     animation: char-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     opacity: 0;
-    filter: blur(40px);
-    transform: translateY(100%);
+    transform: translateY(100%) scale(0.8);
+    will-change: transform, opacity;
   }
-  
+
   @keyframes char-in {
     0% {
       opacity: 0;
-      filter: blur(40px);
-      transform: translateY(100%);
+      transform: translateY(100%) scale(0.8);
     }
     100% {
       opacity: 1;
-      filter: blur(0);
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
     }
   }
 

@@ -8,7 +8,7 @@ export const API_ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/:shortCode",
     title: "Redirect Short URL",
-    description: "Resolves a shortened link and redirects the user's browser to the destination URL. In the background, Linky captures detailed click analytics including geographic region, referrer, browser, operating system, and device type.",
+    description: "Resolves a shortened link and redirects the user's browser to the destination URL. In the background, lnqo captures detailed click analytics including geographic region, referrer, browser, operating system, and device type.",
     authRequired: false,
     queryParams: [
       {

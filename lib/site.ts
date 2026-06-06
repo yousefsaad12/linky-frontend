@@ -1,11 +1,11 @@
-/** Linky — developer-first link analytics (matches URLShortener backend) */
+/** lnqo — developer-first link analytics (matches URLShortener backend) */
 
 const apiUrl =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
   "http://localhost:3000";
 
 export const site = {
-  name: "Linky",
+  name: "lnqo",
   tagline: "Create short links. Track every click.",
   description:
     "Shorten links, serve instant redirects, and track every click with simple, production-grade APIs and realtime analytics.",

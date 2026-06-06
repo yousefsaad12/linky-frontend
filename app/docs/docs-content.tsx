@@ -76,7 +76,7 @@ export function DocsContent() {
   </p>
 
   <p>
-    Designed around REST principles, the Linky API features predictable
+    Designed around REST principles, the lnqo API features predictable
     endpoints, JSON responses, bearer token authentication, and standard
     HTTP response codes for a seamless integration experience.
   </p>
