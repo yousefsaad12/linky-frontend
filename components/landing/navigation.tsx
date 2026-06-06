@@ -26,12 +26,8 @@ export function Navigation() {
   const { user, isAuthenticated, loading } = useAuth();
   const { toast } = useToast();
 
-  const handleSignIn = () => {
-  const loggedOut = localStorage.getItem("loggedOut") === "true";
-  localStorage.removeItem("loggedOut");
-  window.location.href = loggedOut 
-    ? site.auth.signIn + "?prompt=select_account"
-    : site.auth.signIn;
+const handleSignIn = () => {
+  window.location.href = `${site.auth.signIn}?prompt=select_account`;
 };
   const handleLogout = async () => {
   try {
