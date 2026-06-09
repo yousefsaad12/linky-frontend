@@ -21,7 +21,7 @@ export function useAuth() {
 
   const SESSION_TTL = 60 * 60 * 1000; // 1 hour
 
-  const scheduleAutoLogout = (loginAtMs: number) => {
+  const scheduleAutoLogout = useCallback((loginAtMs: number) => {
     if (typeof window === "undefined") return;
 
     if (logoutTimerRef.current) {
@@ -34,13 +34,11 @@ export function useAuth() {
     logoutTimerRef.current = window.setTimeout(async () => {
       try {
         await logout();
-      } catch {
-        // ignore
-      }
+      } catch {}
 
       window.location.href = site.auth.signIn;
-    }, remaining) as unknown as number;
-  };
+    }, remaining);
+  }, []);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -51,7 +49,6 @@ export function useAuth() {
 
       return profile;
     } catch (error: any) {
-      // ❗ 401 = NOT LOGGED IN (NOT AN ERROR)
       if (error instanceof AuthApiError && error.status === 401) {
         setUser(null);
         setIsAuthenticated(false);
@@ -96,11 +93,11 @@ export function useAuth() {
           }
         }
 
-        // 2. Fetch user session from backend
-        await refreshUser();
+        // 2. Fetch user session
+        const userData = await refreshUser();
 
-        // 3. Save login timestamp only if authenticated
-        if (user) {
+        // 3. IMPORTANT FIX: use returned value, NOT stale state
+        if (userData) {
           const now = Date.now();
           localStorage.setItem("loginAt", String(now));
           scheduleAutoLogout(now);
@@ -120,7 +117,7 @@ export function useAuth() {
         window.clearTimeout(logoutTimerRef.current);
       }
     };
-  }, [refreshUser]);
+  }, [refreshUser, scheduleAutoLogout]);
 
   return { user, isAuthenticated, loading };
 }
