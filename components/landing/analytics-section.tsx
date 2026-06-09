@@ -23,7 +23,7 @@ const AnalyticsDashboard = dynamic(
   },
 );
 import type { AnalyticsPeriod } from "@/lib/analytics/types";
-import { fetchAnalyticsOverview, fetchRecentClicks } from "@/lib/analytics";
+import { landingDummyOverviewData, landingDummyRecentClicks } from "@/lib/analytics/landing-dummy-data";
 
 export function AnalyticsSection() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("7d");
@@ -51,27 +51,10 @@ export function AnalyticsSection() {
   useEffect(() => {
     if (!isVisible) return;
 
-    let mounted = true;
-    (async () => {
-      setLoadingServer(true);
-      setServerError(null);
-      try {
-        const overview = await fetchAnalyticsOverview(period);
-        const recent = await fetchRecentClicks({ limit: 5 });
-        if (!mounted) return;
-        setServerData(overview);
-        setServerRecent(recent);
-      } catch (err: any) {
-        if (!mounted) return;
-        setServerError(err?.message ?? String(err));
-      } finally {
-        if (mounted) setLoadingServer(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
+    // Use dummy data instead of API calls
+    setServerData(landingDummyOverviewData);
+    setServerRecent(landingDummyRecentClicks);
+    setLoadingServer(false);
   }, [isVisible, period]);
 
   return (
