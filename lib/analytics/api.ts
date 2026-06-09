@@ -109,6 +109,7 @@ export async function fetchAnalyticsOverview(
   return {
     ...data,
     period: data.period ?? period,
+    clamped: data.clamped,
     topLinks: (data.topLinks ?? []).map(normalizeTopLink),
     breakdowns: {
       deviceTypes: data.breakdowns?.deviceTypes ?? [],
@@ -203,6 +204,7 @@ export async function fetchUrlAnalytics(
   return {
     ...data,
     period: data.period ?? period,
+    clamped: data.clamped,
     breakdowns: {
       deviceTypes: data.breakdowns?.deviceTypes ?? [],
       browsers: data.breakdowns?.browsers ?? [],

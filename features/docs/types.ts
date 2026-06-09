@@ -8,7 +8,7 @@ export type EndpointParam = {
 export type Endpoint = {
   id: string;
   category: "redirect" | "url" | "analytics";
-  method: "GET" | "POST";
+  method: "GET" | "POST" | "DELETE";
   path: string;
   title: string;
   description: string;

@@ -1,6 +1,17 @@
 import { site } from "@/lib/site";
 import type { Endpoint } from "../types";
 
+const bearerHeader = {
+  name: "Authorization",
+  type: "string",
+  required: true,
+  description:
+    "Pro API: Bearer token from an API key. Format: Bearer <API_KEY>. Dashboard requests use the session cookie instead.",
+};
+
+const cookieNote =
+  "Dashboard (browser): send requests with credentials so the httpOnly JWT cookie is included. Pro API: use Authorization: Bearer <API_KEY> from API keys created in the dashboard.";
+
 export const API_ENDPOINTS: Endpoint[] = [
   {
     id: "redirect-link",
@@ -8,17 +19,20 @@ export const API_ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/:shortCode",
     title: "Redirect Short URL",
-    description: "Resolves a shortened link and redirects the user's browser to the destination URL. In the background, lnqo captures detailed click analytics including geographic region, referrer, browser, operating system, and device type.",
+    description:
+      "Resolves a shortened link and redirects the browser to the destination URL. Click analytics (device, browser, region, referrer) are recorded asynchronously. Public — no authentication required.",
     authRequired: false,
     queryParams: [
       {
         name: "shortCode",
         type: "string",
         required: true,
-        description: "The unique 4 to 8 character identifier corresponding to the shortened URL."
-      }
+        description:
+          "The unique short identifier (path segment). Example: GET {baseUrl}/abc123",
+      },
     ],
-    responseDescription: "HTTP status 302 Found redirecting the browser to the original destination. Includes cache control headers to prevent intermediary caches from swallowing analytics tracking.",
+    responseDescription:
+      "HTTP 302 Found redirect to the original destination URL. No JSON body. Cache-Control headers prevent intermediary caches from swallowing analytics.",
   },
   {
     id: "create-link",
@@ -26,31 +40,103 @@ export const API_ENDPOINTS: Endpoint[] = [
     method: "POST",
     path: "/api/v1/url",
     title: "Create Short URL",
-    description: "Generates a shortened version of any long URL. Authenticated developers can pass custom paths and track creations. Each short link gets automatic HTTPS and instant edge propagation.",
+    description: `Creates a shortened link for the authenticated user. ${cookieNote} Free plan: up to 100 links; Pro: unlimited. Returns 403 when the link quota is exceeded.`,
     authRequired: true,
     headers: [
-      {
-        name: "Authorization",
-        type: "string",
-        required: true,
-        description: "Standard HTTP Bearer authorization token. Format: Bearer <API_KEY>"
-      },
+      bearerHeader,
       {
         name: "Content-Type",
         type: "string",
         required: true,
-        description: "Must be set to application/json"
-      }
+        description: "Must be application/json",
+      },
     ],
     bodyParams: [
       {
         name: "originalUrl",
         type: "string",
         required: true,
-        description: "The full destination URL to shorten. Must include http:// or https:// protocol prefix."
-      }
+        description:
+          "Full destination URL including http:// or https:// protocol.",
+      },
     ],
-    responseDescription: "Returns a JSON object detailing the shortened URL metadata, tracking identifier, and absolute links.",
+    responseDescription:
+      "201 Created with status success and data containing the url document and absolute shortUrl.",
+  },
+  {
+    id: "list-urls",
+    category: "url",
+    method: "GET",
+    path: "/api/v1/url",
+    title: "List Short URLs",
+    description: `Returns all short links owned by the authenticated user. ${cookieNote}`,
+    authRequired: true,
+    headers: [bearerHeader],
+    responseDescription:
+      "200 OK with status success and data as an array of URL documents (shortCode, originalUrl, clicks, timestamps).",
+  },
+  {
+    id: "delete-url",
+    category: "url",
+    method: "DELETE",
+    path: "/api/v1/url/:shortCode",
+    title: "Delete Short URL",
+    description: `Permanently deletes a short link and its click records. ${cookieNote}`,
+    authRequired: true,
+    headers: [bearerHeader],
+    queryParams: [
+      {
+        name: "shortCode",
+        type: "string",
+        required: true,
+        description: "Short code of the link to delete.",
+      },
+    ],
+    responseDescription: "204 No Content on success. 404 if the link is not found.",
+  },
+  {
+    id: "list-api-keys",
+    category: "url",
+    method: "GET",
+    path: "/api/v1/auth/api-keys",
+    title: "List API Keys",
+    description:
+      "Lists active API keys for the signed-in Pro user. Cookie authentication only — API keys cannot manage themselves via Bearer token.",
+    authRequired: true,
+    responseDescription:
+      "200 OK with status success, results count, and data array of key metadata (name, prefix, lastUsedAt, createdAt). Pro plan required.",
+  },
+  {
+    id: "create-api-key",
+    category: "url",
+    method: "POST",
+    path: "/api/v1/auth/api-keys",
+    title: "Create API Key",
+    description:
+      "Creates a new API key (max 5 active per user). The raw key is returned once in the response. Cookie authentication only. Manage keys from the dashboard API keys page.",
+    authRequired: true,
+    bodyParams: [
+      {
+        name: "name",
+        type: "string",
+        required: false,
+        description: "Human-readable label (max 64 chars). Defaults to \"Default\".",
+      },
+    ],
+    responseDescription:
+      "201 Created with id, name, prefix, key (shown once), and createdAt. Pro plan required.",
+  },
+  {
+    id: "revoke-api-key",
+    category: "url",
+    method: "DELETE",
+    path: "/api/v1/auth/api-keys/:id",
+    title: "Revoke API Key",
+    description:
+      "Revokes an API key immediately. Cookie authentication only. Pro plan required.",
+    authRequired: true,
+    responseDescription:
+      "200 OK with status success on revoke. Path parameter :id is the API key document id. 404 if not found.",
   },
   {
     id: "analytics-overview",
@@ -58,25 +144,25 @@ export const API_ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/analytics/overview",
     title: "Analytics Overview",
-    description: "Fetches aggregated performance metrics across all shortened links created by the developer. Includes high-level KPIs, chronological click timeline charts, and geographical and device breakdowns.",
+    description: `Aggregated KPIs, click timeline, top links, and breakdowns for all owned links. ${cookieNote} Free plan click history is limited to 30 days — responses may include clamped: true when a longer period was requested.`,
     authRequired: true,
-    headers: [
-      {
-        name: "Authorization",
-        type: "string",
-        required: true,
-        description: "Bearer <API_KEY>"
-      }
-    ],
+    headers: [bearerHeader],
     queryParams: [
       {
         name: "period",
         type: "string",
         required: false,
-        description: "Time range filter. Options: '24h', '7d', '30d', '90d', 'all'. Default: '7d'"
-      }
+        description: "Time range: 24h, 7d, or 30d. Default: 30d",
+      },
+      {
+        name: "limit",
+        type: "integer",
+        required: false,
+        description: "Max top links to return. Default: 5, max: 50",
+      },
     ],
-    responseDescription: "Returns aggregated click totals, active counts, recent click rate changes, and top country/device arrays.",
+    responseDescription:
+      "200 OK with period, optional clamped flag, summary KPIs, timeline, topLinks, and breakdowns.",
   },
   {
     id: "analytics-top-links",
@@ -84,63 +170,58 @@ export const API_ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/analytics/top-links",
     title: "Top Performing Links",
-    description: "Retrieves a ranking of shortened URLs sorted by highest total click activity. Perfect for populating dashboard leaderboard widgets or highlighting trending links.",
+    description: `Links ranked by clicks in the selected period. ${cookieNote}`,
     authRequired: true,
-    headers: [
-      {
-        name: "Authorization",
-        type: "string",
-        required: true,
-        description: "Bearer <API_KEY>"
-      }
-    ],
+    headers: [bearerHeader],
     queryParams: [
+      {
+        name: "period",
+        type: "string",
+        required: false,
+        description: "Time range: 24h, 7d, or 30d. Default: 30d",
+      },
       {
         name: "limit",
         type: "integer",
         required: false,
-        description: "Max number of items to return. Default: 10"
-      }
+        description: "Max items. Default: 10, max: 50",
+      },
     ],
-    responseDescription: "Returns an array of links ordered by clicks descending.",
+    responseDescription:
+      "200 OK with results count, period, optional clamped, and data array ordered by clicks descending.",
   },
   {
     id: "analytics-links",
     category: "analytics",
     method: "GET",
     path: "/api/v1/analytics/links",
-    title: "Retrieve Links List",
-    description: "Returns a paginated list of all short links created by the developer. Perfect for creating links list panels with search, page shifting, and performance sort parameters.",
+    title: "Paginated Links Table",
+    description: `Paginated list of short links with sort options. ${cookieNote}`,
     authRequired: true,
-    headers: [
-      {
-        name: "Authorization",
-        type: "string",
-        required: true,
-        description: "Bearer <API_KEY>"
-      }
-    ],
+    headers: [bearerHeader],
     queryParams: [
       {
         name: "page",
         type: "integer",
         required: false,
-        description: "Page index to retrieve. Default: 1"
+        description: "Page index. Default: 1",
       },
       {
         name: "limit",
         type: "integer",
         required: false,
-        description: "Links per page. Default: 20"
+        description: "Links per page. Default: 20, max: 100",
       },
       {
         name: "sort",
         type: "string",
         required: false,
-        description: "Order field. Options: 'clicks' (highest clicks first) or 'createdAt' (newest links first). Default: 'clicks'"
-      }
+        description:
+          "Sort field: clicks (highest first) or createdAt (newest first). Default: createdAt",
+      },
     ],
-    responseDescription: "Returns a paginated payload including links list and total page numbers.",
+    responseDescription:
+      "200 OK with page, totalPages, total, results, and data array.",
   },
   {
     id: "analytics-recent-clicks",
@@ -148,25 +229,25 @@ export const API_ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/analytics/recent-clicks",
     title: "Recent Clicks Feed",
-    description: "Retrieves a feed of the most recent clicks recorded. Used for plotting live activity feeds or monitoring real-time incoming redirects with full metadata descriptors.",
+    description: `Latest click events with device and region metadata. ${cookieNote} History window depends on plan (30d free, 365d pro).`,
     authRequired: true,
-    headers: [
-      {
-        name: "Authorization",
-        type: "string",
-        required: true,
-        description: "Bearer <API_KEY>"
-      }
-    ],
+    headers: [bearerHeader],
     queryParams: [
       {
         name: "limit",
         type: "integer",
         required: false,
-        description: "Maximum logs to return. Default: 20. Max: 100"
-      }
+        description: "Max events. Default: 20, max: 100",
+      },
+      {
+        name: "shortCode",
+        type: "string",
+        required: false,
+        description: "Filter to a single short code.",
+      },
     ],
-    responseDescription: "Returns a flat chronological array of click events with client environments.",
+    responseDescription:
+      "200 OK with results count and data array of click documents.",
   },
   {
     id: "analytics-link-detail",
@@ -174,30 +255,27 @@ export const API_ENDPOINTS: Endpoint[] = [
     method: "GET",
     path: "/api/v1/analytics/links/:shortCode",
     title: "Link Specific Breakdown",
-    description: "Drills into the analytics for a single short link. Returns timeline charts and user environment breakdowns for the selected short code.",
+    description: `Per-link analytics: timeline and environment breakdowns. ${cookieNote} City breakdown requires Pro. Free plans may receive clamped: true for periods beyond 30 days.`,
     authRequired: true,
-    headers: [
-      {
-        name: "Authorization",
-        type: "string",
-        required: true,
-        description: "Bearer <API_KEY>"
-      }
-    ],
+    headers: [bearerHeader],
     queryParams: [
       {
         name: "shortCode",
         type: "string",
         required: true,
-        description: "The short code to examine."
+        description: "Short code to analyze.",
       },
       {
         name: "period",
         type: "string",
         required: false,
-        description: "Time range filter. Options: '24h', '7d', '30d', '90d', 'all'. Default: '7d'"
-      }
+        description: "Time range: 24h, 7d, or 30d. Default: 30d",
+      },
     ],
-    responseDescription: "Returns details of the shortened resource, along with aggregated sums and nested arrays of demographics.",
-  }
+    responseDescription:
+      "200 OK with url metadata, summary, timeline, breakdowns, and optional clamped flag.",
+  },
 ];
+
+/** Shown in docs intro — full API base URL */
+export const API_BASE_URL = site.apiUrl;

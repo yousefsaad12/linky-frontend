@@ -10,10 +10,13 @@ const plans = [
     description: "Perfect for personal projects",
     price: { monthly: 0, annual: 0 },
     features: [
-      "500 short links",
-      "90 days click history",
-      "Device + country analytics",
+      "100 short links",
+      "30 days click history",
+      "Basic analytics",
+      "Device analytics",
+      "Country analytics",
       "Google sign-in",
+      "Community support",
     ],
     cta: "Get started free",
     popular: false,
@@ -22,16 +25,22 @@ const plans = [
   },
   {
     name: "Pro",
-    description: "For growing businesses",
+    description: "For creators and growing businesses",
     price: { monthly: 7, annual: 5 },
     features: [
       "Unlimited short links",
-      "3 custom domains",
       "1 year click history",
-      "City-level + device analytics",
-      "API keys + scoped access",
-      "Webhooks for realtime events",
+      "Advanced analytics",
+      "City-level analytics",
+      "QR code generation",
+      "Password-protected links",
+      "Link expiration dates",
+      "API keys",
       "Priority support",
+    ],
+    comingSoon: [
+      "Custom domains",
+      "Webhooks",
     ],
     cta: "Start 14-day trial",
     popular: true,
@@ -40,20 +49,21 @@ const plans = [
   },
   {
     name: "Team",
-    description: "For collaborative teams",
+    description: "For startups and collaborative teams",
     price: { monthly: 25, annual: 20 },
     features: [
       "Everything in Pro",
-      "Unlimited team members",
-      "10+ custom domains",
+      "Up to 10 team members",
+      "Shared workspace",
       "Role-based permissions",
-      "SSO / SAML",
-      "99.9% uptime SLA",
-      "Dedicated onboarding",
+      "Team analytics dashboard",
+      "Audit logs",
+      "Dedicated support",
     ],
+    comingSoon: true,
     cta: "Contact sales",
     popular: false,
-    highlight: "Billed annually · Enterprise features",
+    highlight: "Built for collaborative teams",
     variant: "outline" as const,
   },
 ];
@@ -175,6 +185,11 @@ function PlanCard({
             Most popular
           </span>
         )}
+        {plan.comingSoon && (
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-mono bg-foreground/5 text-muted-foreground">
+            Coming soon
+          </span>
+        )}
       </div>
 
       {/* Name + description */}
@@ -195,7 +210,7 @@ function PlanCard({
       <hr className="border-foreground/10 mb-6" />
 
       {/* Features — fixed height rows so buttons always align */}
-      <ul className="flex-1 space-y-0 mb-8">
+      <ul className="flex-1 space-y-0 mb-4">
         {paddedFeatures.map((feature, i) => (
           <li
             key={i}
@@ -214,6 +229,8 @@ function PlanCard({
           </li>
         ))}
       </ul>
+
+     
 
       {/* CTA — always at bottom */}
       <AuthButton

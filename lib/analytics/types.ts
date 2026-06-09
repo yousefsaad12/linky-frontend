@@ -33,6 +33,7 @@ export type AnalyticsRecentClick = {
 
 export type AnalyticsOverviewData = {
   period: AnalyticsPeriod;
+  clamped?: boolean;
   summary: {
     totalUrls: number;
     totalClicks: number;
@@ -65,6 +66,7 @@ export type AnalyticsLinksTableResponse = {
 
 export type AnalyticsUrlDetail = {
   period: AnalyticsPeriod;
+  clamped?: boolean;
   url: {
     shortCode: string;
     originalUrl: string;

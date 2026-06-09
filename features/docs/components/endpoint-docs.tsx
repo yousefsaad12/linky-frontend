@@ -4,6 +4,17 @@ import React, { useEffect, useState } from "react";
 import { Lock, Globe, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createHighlighter } from "shiki";
+import { site } from "@/lib/site";
+
+function resolveExampleUrl(path: string): string {
+  if (path.startsWith("/api")) {
+    return `${site.apiUrl}${path}`;
+  }
+  if (path.startsWith("/:")) {
+    return `${site.apiUrl}/abc123`;
+  }
+  return path;
+}
 
 
 
@@ -27,7 +38,7 @@ export interface Endpoint {
 
   category: "redirect" | "url" | "analytics";
 
-  method: "GET" | "POST";
+  method: "GET" | "POST" | "DELETE";
 
   path: string;
 
@@ -55,13 +66,14 @@ interface EndpointDocsProps {
 
 export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python' | 'curl' | 'go' | 'java' | 'dotnet' = 'javascript'): string {
   const { method, path, authRequired, bodyParams, queryParams } = endpoint;
+  const url = resolveExampleUrl(path);
   
   let example = "";
   
   if (lang === 'javascript') {
-    if (method === "GET") {
-      example += `const response = await fetch("${path}`;
-      if (queryParams && queryParams.length > 0) {
+    if (method === "GET" || method === "DELETE") {
+      example += `const response = await fetch("${url}`;
+      if (queryParams && queryParams.length > 0 && method === "GET") {
         const params = queryParams
           .filter(p => p.required)
           .map(p => `${p.name}=VALUE`)
@@ -69,18 +81,25 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
         if (params) example += `?${params}`;
       }
       example += `"`;
-      if (authRequired) {
+      if (authRequired || method === "DELETE") {
         example += `,\n  {\n`;
+        if (method === "DELETE") {
+          example += `    method: "DELETE",\n`;
+        }
         example += `    headers: {\n`;
         example += `      "Authorization": "Bearer YOUR_API_KEY"\n`;
         example += `    }\n`;
         example += `  }\n`;
       }
       example += `);\n\n`;
-      example += `const data = await response.json();\n`;
-      example += `console.log(data);`;
+      if (method === "GET") {
+        example += `const data = await response.json();\n`;
+        example += `console.log(data);`;
+      } else {
+        example += `// 204 No Content on success`;
+      }
     } else if (method === "POST") {
-      example += `const response = await fetch("${path}"\n`;
+      example += `const response = await fetch("${url}"\n`;
       example += `  , {\n`;
       example += `    method: "POST",\n`;
       example += `    headers: {\n`;
@@ -102,21 +121,25 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       example += `console.log(data);`;
     }
   } else if (lang === 'python') {
-    if (method === "GET") {
+    if (method === "GET" || method === "DELETE") {
       example += `import requests\n\n`;
-      example += `url = "${path}"\n`;
-      if (authRequired) {
+      example += `url = "${url}"\n`;
+      if (authRequired || method === "DELETE") {
         example += `headers = {"Authorization": "Bearer YOUR_API_KEY"}\n`;
-        example += `response = requests.get(url, headers=headers)\n`;
+        example += `response = requests.${method === "DELETE" ? "delete" : "get"}(url, headers=headers)\n`;
       } else {
         example += `response = requests.get(url)\n`;
       }
       example += `\n`;
-      example += `data = response.json()\n`;
-      example += `print(data)`;
+      if (method === "GET") {
+        example += `data = response.json()\n`;
+        example += `print(data)`;
+      } else {
+        example += `print(response.status_code)  # 204 on success`;
+      }
     } else if (method === "POST") {
       example += `import requests\n\n`;
-      example += `url = "${path}"\n`;
+      example += `url = "${url}"\n`;
       example += `headers = {\n`;
       if (authRequired) {
         example += `    "Authorization": "Bearer YOUR_API_KEY",\n`;
@@ -138,13 +161,13 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       example += `print(result)`;
     }
   } else if (lang === 'curl') {
-    if (method === "GET") {
-      example += `curl -X GET "${path}"`;
-      if (authRequired) {
+    if (method === "GET" || method === "DELETE") {
+      example += `curl -X ${method} "${url}"`;
+      if (authRequired || method === "DELETE") {
         example += ` \\\n  -H "Authorization: Bearer YOUR_API_KEY"`;
       }
     } else if (method === "POST") {
-      example += `curl -X POST "${path}"`;
+      example += `curl -X POST "${url}"`;
       if (authRequired) {
         example += ` \\\n  -H "Authorization: Bearer YOUR_API_KEY"`;
       }
@@ -158,7 +181,7 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       }
     }
   } else if (lang === 'go') {
-    if (method === "GET") {
+    if (method === "GET" || method === "DELETE") {
       example += `package main\n\n`;
       example += `import (\n`;
       example += `    "fmt"\n`;
@@ -166,8 +189,8 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       example += `    "net/http"\n`;
       example += `)\n\n`;
       example += `func main() {\n`;
-      example += `    req, _ := http.NewRequest("GET", "${path}", nil)\n`;
-      if (authRequired) {
+      example += `    req, _ := http.NewRequest("${method}", "${url}", nil)\n`;
+      if (authRequired || method === "DELETE") {
         example += `    req.Header.Set("Authorization", "Bearer YOUR_API_KEY")\n`;
       }
       example += `    \n`;
@@ -199,9 +222,9 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
         });
         example += `    }\n`;
         example += `    jsonData, _ := json.Marshal(data)\n`;
-        example += `    req, _ := http.NewRequest("POST", "${path}", bytes.NewBuffer(jsonData))\n`;
+        example += `    req, _ := http.NewRequest("POST", "${url}", bytes.NewBuffer(jsonData))\n`;
       } else {
-        example += `    req, _ := http.NewRequest("POST", "${path}", nil)\n`;
+        example += `    req, _ := http.NewRequest("POST", "${url}", nil)\n`;
       }
       example += `    \n`;
       example += `    req.Header.Set("Content-Type", "application/json")\n`;
@@ -222,7 +245,7 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       example += `}\n`;
     }
   } else if (lang === 'java') {
-    if (method === "GET") {
+    if (method === "GET" || method === "DELETE") {
       example += `import java.net.URI;\n`;
       example += `import java.net.http.HttpClient;\n`;
       example += `import java.net.http.HttpRequest;\n`;
@@ -232,11 +255,11 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       example += `        HttpClient client = HttpClient.newHttpClient();\n`;
       example += `        \n`;
       example += `        HttpRequest request = HttpRequest.newBuilder()\n`;
-      example += `            .uri(URI.create("${path}"))\n`;
-      if (authRequired) {
+      example += `            .uri(URI.create("${url}"))\n`;
+      if (authRequired || method === "DELETE") {
         example += `            .header("Authorization", "Bearer YOUR_API_KEY")\n`;
       }
-      example += `            .GET()\n`;
+      example += `            .${method}()\n`;
       example += `            .build();\n`;
       example += `        \n`;
       example += `        try {\n`;
@@ -258,7 +281,7 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       example += `        HttpClient client = HttpClient.newHttpClient();\n`;
       example += `        \n`;
       example += `        HttpRequest request = HttpRequest.newBuilder()\n`;
-      example += `            .uri(URI.create("${path}"))\n`;
+      example += `            .uri(URI.create("${url}"))\n`;
       example += `            .header("Content-Type", "application/json")\n`;
       if (authRequired) {
         example += `            .header("Authorization", "Bearer YOUR_API_KEY")\n`;
@@ -284,18 +307,18 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
       example += `}\n`;
     }
   } else if (lang === 'dotnet') {
-    if (method === "GET") {
+    if (method === "GET" || method === "DELETE") {
       example += `using System;\n`;
       example += `using System.Net.Http;\n`;
       example += `using System.Threading.Tasks;\n\n`;
       example += `class Program {\n`;
       example += `    static async Task Main() {\n`;
       example += `        using var client = new HttpClient();\n`;
-      if (authRequired) {
+      if (authRequired || method === "DELETE") {
         example += `        client.DefaultRequestHeaders.Add("Authorization", "Bearer YOUR_API_KEY");\n`;
       }
       example += `        \n`;
-      example += `        var response = await client.GetAsync("${path}");\n`;
+      example += `        var response = await client.${method === "DELETE" ? "DeleteAsync" : "GetAsync"}("${url}");\n`;
       example += `        \n`;
       example += `        var content = await response.Content.ReadAsStringAsync();\n`;
       example += `        Console.WriteLine(content);\n`;
@@ -324,9 +347,9 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
         example += `        var json = JsonConvert.SerializeObject(data);\n`;
         example += `        var content = new StringContent(json, Encoding.UTF8, "application/json");\n`;
         example += `        \n`;
-        example += `        var response = await client.PostAsync("${path}", content);\n`;
+        example += `        var response = await client.PostAsync("${url}", content);\n`;
       } else {
-        example += `        var response = await client.PostAsync("${path}", null);\n`;
+        example += `        var response = await client.PostAsync("${url}", null);\n`;
       }
       example += `        \n`;
       example += `        var responseContent = await response.Content.ReadAsStringAsync();\n`;
@@ -340,96 +363,213 @@ export function getCodeExample(endpoint: Endpoint, lang: 'javascript' | 'python'
 }
 
 function getJsonResponse(endpoint: Endpoint): string {
-  const { id, category, method } = endpoint;
-  
-  let response = "";
-  
+  const { id } = endpoint;
+
   if (id === "redirect-link") {
-    response += `{\n`;
-    response += `  "status": "redirect",\n`;
-    response += `  "destination": "https://example.com/original-url",\n`;
-    response += `  "shortCode": "abc123",\n`;
-    response += `  "clicks": 42\n`;
-    response += `}`;
-  } else if (id === "create-link") {
-    response += `{\n`;
-    response += `  "success": true,\n`;
-    response += `  "shortUrl": "https://linky.app/abc123",\n`;
-    response += `  "shortCode": "abc123",\n`;
-    response += `  "originalUrl": "https://example.com/very-long-url",\n`;
-    response += `  "createdAt": "2024-01-15T10:30:00Z"\n`;
-    response += `}`;
-  } else if (id === "analytics-overview") {
-    response += `{\n`;
-    response += `  "totalClicks": 1250,\n`;
-    response += `  "activeLinks": 45,\n`;
-    response += `  "topCountries": ["US", "UK", "DE"],\n`;
-    response += `  "topDevices": ["mobile", "desktop"],\n`;
-    response += `  "period": "7d"\n`;
-    response += `}`;
-  } else if (id === "analytics-top-links") {
-    response += `[\n`;
-    response += `  {\n`;
-    response += `    "shortCode": "abc123",\n`;
-    response += `    "shortUrl": "https://linky.app/abc123",\n`;
-    response += `    "clicks": 342,\n`;
-    response += `    "createdAt": "2024-01-10T08:00:00Z"\n`;
-    response += `  },\n`;
-    response += `  {\n`;
-    response += `    "shortCode": "def456",\n`;
-    response += `    "shortUrl": "https://linky.app/def456",\n`;
-    response += `    "clicks": 287,\n`;
-    response += `    "createdAt": "2024-01-12T14:30:00Z"\n`;
-    response += `  }\n`;
-    response += `]`;
-  } else if (id === "analytics-links") {
-    response += `{\n`;
-    response += `  "links": [\n`;
-    response += `    {\n`;
-    response += `      "shortCode": "abc123",\n`;
-    response += `      "shortUrl": "https://linky.app/abc123",\n`;
-    response += `      "clicks": 342,\n`;
-    response += `      "createdAt": "2024-01-10T08:00:00Z"\n`;
-    response += `    }\n`;
-    response += `  ],\n`;
-    response += `  "total": 45,\n`;
-    response += `  "page": 1,\n`;
-    response += `  "limit": 20\n`;
-    response += `}`;
-  } else if (id === "analytics-recent-clicks") {
-    response += `[\n`;
-    response += `  {\n`;
-    response += `    "shortCode": "abc123",\n`;
-    response += `    "clickedAt": "2024-01-15T10:30:00Z",\n`;
-    response += `    "country": "US",\n`;
-    response += `    "device": "mobile",\n`;
-    response += `    "browser": "Chrome"\n`;
-    response += `  },\n`;
-    response += `  {\n`;
-    response += `    "shortCode": "def456",\n`;
-    response += `    "clickedAt": "2024-01-15T10:29:00Z",\n`;
-    response += `    "country": "UK",\n`;
-    response += `    "device": "desktop",\n`;
-    response += `    "browser": "Firefox"\n`;
-    response += `  }\n`;
-    response += `]`;
-  } else if (id === "analytics-link-detail") {
-    response += `{\n`;
-    response += `  "shortCode": "abc123",\n`;
-    response += `  "shortUrl": "https://linky.app/abc123",\n`;
-    response += `  "originalUrl": "https://example.com/original",\n`;
-    response += `  "totalClicks": 342,\n`;
-    response += `  "clicksOverTime": [\n`;
-    response += `    {"date": "2024-01-10", "clicks": 45},\n`;
-    response += `    {"date": "2024-01-11", "clicks": 67},\n`;
-    response += `    {"date": "2024-01-12", "clicks": 89}\n`;
-    response += `  ],\n`;
-    response += `  "countries": {"US": 120, "UK": 85, "DE": 45},\n`;
-    response += `  "devices": {"mobile": 200, "desktop": 142}\n`;
-    response += `}`;
+    return "HTTP 302 redirect (no JSON body)";
   }
-  
-  return response;
+  if (id === "delete-url" || id === "revoke-api-key") {
+    return "HTTP 204 No Content (no JSON body)";
+  }
+
+  const base = site.apiUrl.replace(/\/+$/, "");
+
+  if (id === "create-link") {
+    return `{
+  "status": "success",
+  "data": {
+    "url": {
+      "_id": "65a1b2c3d4e5f6789012345",
+      "shortCode": "abc123",
+      "originalUrl": "https://example.com/very-long-url",
+      "clicks": 0,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    },
+    "shortUrl": "${base}/abc123"
+  }
+}`;
+  }
+  if (id === "list-urls") {
+    return `{
+  "status": "success",
+  "data": [
+    {
+      "_id": "65a1b2c3d4e5f6789012345",
+      "shortCode": "abc123",
+      "originalUrl": "https://example.com/page",
+      "clicks": 42,
+      "createdAt": "2024-01-10T08:00:00.000Z",
+      "updatedAt": "2024-01-15T09:00:00.000Z"
+    }
+  ]
+}`;
+  }
+  if (id === "list-api-keys") {
+    return `{
+  "status": "success",
+  "results": 1,
+  "data": [
+    {
+      "_id": "65a1b2c3d4e5f6789012346",
+      "name": "Production",
+      "prefix": "lnqo_a1b2",
+      "lastUsedAt": "2024-01-14T12:00:00.000Z",
+      "createdAt": "2024-01-01T08:00:00.000Z"
+    }
+  ]
+}`;
+  }
+  if (id === "create-api-key") {
+    return `{
+  "status": "success",
+  "message": "Store this key securely — it will not be shown again.",
+  "data": {
+    "id": "65a1b2c3d4e5f6789012347",
+    "name": "Production",
+    "prefix": "lnqo_a1b2",
+    "key": "lnqo_a1b2c3d4e5f6789012345678901234567890",
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  }
+}`;
+  }
+  if (id === "analytics-overview") {
+    return `{
+  "status": "success",
+  "data": {
+    "period": "30d",
+    "clamped": true,
+    "summary": {
+      "totalUrls": 12,
+      "totalClicks": 1250,
+      "clicksInPeriod": 340,
+      "clicksToday": 18,
+      "clicksLast7d": 120,
+      "clicksLast30d": 340,
+      "activeLinksInPeriod": 8
+    },
+    "timeline": [
+      { "date": "2024-01-14", "clicks": 12 },
+      { "date": "2024-01-15", "clicks": 18 }
+    ],
+    "topLinks": [
+      {
+        "shortCode": "abc123",
+        "originalUrl": "https://example.com/page",
+        "clicks": 120,
+        "totalClicks": 342,
+        "createdAt": "2024-01-10T08:00:00.000Z"
+      }
+    ],
+    "breakdowns": {
+      "deviceTypes": [{ "name": "mobile", "count": 200 }],
+      "browsers": [{ "name": "Chrome", "count": 150 }],
+      "referrers": [{ "name": "direct", "count": 90 }],
+      "regions": [{ "name": "US", "count": 120 }]
+    }
+  }
+}`;
+  }
+  if (id === "analytics-top-links") {
+    return `{
+  "status": "success",
+  "results": 2,
+  "period": "30d",
+  "data": [
+    {
+      "shortCode": "abc123",
+      "originalUrl": "https://example.com/page",
+      "clicks": 342,
+      "totalClicks": 342,
+      "createdAt": "2024-01-10T08:00:00.000Z"
+    },
+    {
+      "shortCode": "def456",
+      "originalUrl": "https://example.com/other",
+      "clicks": 287,
+      "totalClicks": 287,
+      "createdAt": "2024-01-12T14:30:00.000Z"
+    }
+  ]
+}`;
+  }
+  if (id === "analytics-links") {
+    return `{
+  "status": "success",
+  "page": 1,
+  "totalPages": 3,
+  "results": 2,
+  "total": 45,
+  "data": [
+    {
+      "shortCode": "abc123",
+      "originalUrl": "https://example.com/page",
+      "clicks": 342,
+      "createdAt": "2024-01-10T08:00:00.000Z",
+      "updatedAt": "2024-01-15T09:00:00.000Z"
+    }
+  ]
+}`;
+  }
+  if (id === "analytics-recent-clicks") {
+    return `{
+  "status": "success",
+  "results": 2,
+  "data": [
+    {
+      "shortCode": "abc123",
+      "deviceType": "mobile",
+      "browser": "Chrome",
+      "region": "US",
+      "referrer": "https://google.com",
+      "clickedAt": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "shortCode": "def456",
+      "deviceType": "desktop",
+      "browser": "Firefox",
+      "region": "UK",
+      "referrer": "direct",
+      "clickedAt": "2024-01-15T10:29:00.000Z"
+    }
+  ]
+}`;
+  }
+  if (id === "analytics-link-detail") {
+    return `{
+  "status": "success",
+  "data": {
+    "period": "30d",
+    "clamped": true,
+    "url": {
+      "shortCode": "abc123",
+      "originalUrl": "https://example.com/original",
+      "shortUrl": "${base}/abc123",
+      "clicks": 342,
+      "createdAt": "2024-01-10T08:00:00.000Z",
+      "updatedAt": "2024-01-15T09:00:00.000Z"
+    },
+    "summary": {
+      "totalClicks": 342,
+      "clicksInPeriod": 120
+    },
+    "timeline": [
+      { "date": "2024-01-14", "clicks": 8 },
+      { "date": "2024-01-15", "clicks": 12 }
+    ],
+    "breakdowns": {
+      "deviceTypes": [{ "name": "mobile", "count": 80 }],
+      "browsers": [{ "name": "Chrome", "count": 60 }],
+      "operatingSystems": [{ "name": "iOS", "count": 45 }],
+      "referrers": [{ "name": "direct", "count": 40 }],
+      "regions": [{ "name": "US", "count": 55 }],
+      "cities": [{ "name": "New York", "count": 20 }]
+    }
+  }
+}`;
+  }
+
+  return "{}";
 }
 
 export function EndpointDocs({ endpoint }: EndpointDocsProps) {
@@ -501,11 +641,11 @@ export function EndpointDocs({ endpoint }: EndpointDocsProps) {
 
             "text-[10px] lg:text-xs font-mono font-semibold px-2 lg:px-2.5 py-1 rounded border leading-none tracking-wide",
 
-            endpoint.method === "POST" 
-
+            endpoint.method === "POST"
               ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-
-              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+              : endpoint.method === "DELETE"
+                ? "bg-red-500/10 text-red-400 border-red-500/20"
+                : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
 
           )}>
 
@@ -610,7 +750,13 @@ export function EndpointDocs({ endpoint }: EndpointDocsProps) {
         <h4 className="text-[10px] lg:text-[11px] font-mono text-white/40 uppercase tracking-widest">Response</h4>
         <div className="bg-[#181818] border border-white/5 rounded-xl overflow-hidden shadow-xl">
           <div className="px-3 lg:px-4 py-2 border-b border-white/5 bg-[#1e1e1e] flex items-center justify-between">
-            <span className="text-[10px] font-mono text-white/40">JSON Response</span>
+            <span className="text-[10px] font-mono text-white/40">
+              {endpoint.id === "redirect-link" ||
+              endpoint.id === "delete-url" ||
+              endpoint.id === "revoke-api-key"
+                ? "Response"
+                : "JSON Response"}
+            </span>
             <button
               onClick={handleCopyJson}
               className="text-[9px] lg:text-[10px] font-mono px-2 py-1 rounded transition-colors text-white/40 hover:text-white/60 hover:bg-white/5 flex items-center gap-1"

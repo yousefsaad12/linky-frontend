@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { site } from "@/lib/site";
-import { logout } from "@/lib/auth";
+import {
+  AuthApiError,
+  getCurrentUser,
+  logout,
+  type UserProfile,
+} from "@/lib/auth";
 
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-}
+export type User = UserProfile;
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -20,7 +21,6 @@ export function useAuth() {
 
   const scheduleAutoLogout = (loginAtMs: number) => {
     if (typeof window === "undefined") return;
-    // Clear existing timer
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
     }
@@ -31,28 +31,40 @@ export function useAuth() {
     logoutTimerRef.current = window.setTimeout(async () => {
       try {
         await logout();
-      } catch (e) {
+      } catch {
         // ignore
       }
-      // After logout, redirect to sign-in to force login again
       if (typeof window !== "undefined") {
         window.location.href = site.auth.signIn;
       }
     }, remaining) as unknown as number;
   };
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const profile = await getCurrentUser();
+      setUser(profile);
+      setIsAuthenticated(true);
+      return profile;
+    } catch (error) {
+      if (error instanceof AuthApiError && error.status === 401) {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      throw error;
+    }
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
-      // If we already have a stored login timestamp, check expiry first
       try {
         const raw = localStorage.getItem("loginAt");
         if (raw) {
           const at = Number(raw);
           if (!Number.isNaN(at) && Date.now() - at > SESSION_TTL) {
-            // Session expired on the client — perform logout and redirect
             try {
               await logout();
-            } catch (e) {
+            } catch {
               // ignore
             }
             setUser(null);
@@ -64,81 +76,28 @@ export function useAuth() {
             scheduleAutoLogout(at);
           }
         }
-      } catch (e) {
+      } catch {
         // ignore localStorage errors
       }
 
       try {
-        if (process.env.NODE_ENV !== "production") {
-          console.debug("Checking auth at:", `${site.apiUrl}/api/v1/auth/me`);
+        await refreshUser();
+        try {
+          const now = Date.now();
+          localStorage.setItem("loginAt", String(now));
+          scheduleAutoLogout(now);
+        } catch {
+          // ignore localStorage errors
         }
-
-        const res = await fetch(`${site.apiUrl}/api/v1/auth/me`, {
-          method: "GET",
-          credentials: "include", // 💡 Crucial: Sends your production JWT cookie with the cross-origin request
-          headers: {
-            Accept: "application/json",
-          },
-        });
-
-        if (process.env.NODE_ENV !== "production") {
-          console.debug("Auth response status:", res.status);
-        }
-
-        if (res.ok) {
-          const json = await res.json();
-
-          // Normalize controller payload: APIs may return { data: {...} },
-          // { user: {...} } or the user object directly.
-          let payload: any = null;
-          if (json && typeof json === "object") {
-            payload = "data" in json ? json.data : json;
-          }
-
-          // Some backends nest the user under `user`.
-          const userPayload =
-            payload && typeof payload === "object"
-              ? (payload.user ?? payload)
-              : null;
-
-          // Guard against missing payload
-          if (!userPayload || (!userPayload.id && !userPayload._id)) {
-            console.warn("Auth response missing user data:", payload);
-            setUser(null);
-            setIsAuthenticated(false);
-          } else {
-            const realUser: User = {
-              id: String(userPayload.id ?? userPayload._id ?? ""),
-              email: String(userPayload.email ?? ""),
-              name: userPayload.name ?? userPayload.fullName ?? "lnqo User",
-            };
-
-            if (process.env.NODE_ENV !== "production") {
-              console.debug("User authenticated successfully:", realUser);
-            }
-            setUser(realUser);
-            setIsAuthenticated(true);
-            try {
-              const now = Date.now();
-              localStorage.setItem("loginAt", String(now));
-              scheduleAutoLogout(now);
-            } catch (e) {
-              // ignore localStorage errors
-            }
-          }
-        } else if (res.status === 401) {
-          console.warn("Not authenticated (401)");
+      } catch (error) {
+        if (error instanceof AuthApiError && error.status === 401) {
           setUser(null);
           setIsAuthenticated(false);
         } else {
-          console.error("Auth check failed with status:", res.status);
+          console.error("Auth hydration error:", error);
           setUser(null);
           setIsAuthenticated(false);
         }
-      } catch (error) {
-        console.error("Auth hydration error:", error);
-        setUser(null);
-        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -151,7 +110,7 @@ export function useAuth() {
         window.clearTimeout(logoutTimerRef.current);
       }
     };
-  }, []);
+  }, [refreshUser]);
 
-  return { user, isAuthenticated, loading };
+  return { user, isAuthenticated, loading, refreshUser };
 }

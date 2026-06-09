@@ -1,4 +1,9 @@
 import { site } from "@/lib/site";
+import type {
+  ApiKeySummary,
+  CreateApiKeyResponse,
+  UserProfile,
+} from "./types";
 
 export class AuthApiError extends Error {
   status: number;
@@ -57,14 +62,78 @@ async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+type PlanLimits = UserProfile["limits"];
+
+function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
+  const limits = (raw.limits as PlanLimits | undefined) ?? {
+    maxLinks: 100,
+    clickHistoryDays: 30,
+  };
+  const maxLinks = limits.maxLinks;
+  return {
+    id: String(raw.id ?? raw._id ?? ""),
+    email: String(raw.email ?? ""),
+    name: raw.name ? String(raw.name) : undefined,
+    avatar: raw.avatar ? String(raw.avatar) : undefined,
+    plan: (raw.plan as UserProfile["plan"]) || "free",
+    limits: {
+      maxLinks:
+        maxLinks === null || maxLinks === undefined || !Number.isFinite(maxLinks)
+          ? null
+          : Number(maxLinks),
+      clickHistoryDays: Number(limits.clickHistoryDays) || 30,
+    },
+    features: (raw.features as UserProfile["features"]) ?? {
+      basicAnalytics: true,
+      deviceAnalytics: true,
+      countryAnalytics: true,
+      cityAnalytics: false,
+      advancedAnalytics: false,
+      apiAccess: false,
+    },
+    usage: {
+      links: Number((raw.usage as { links?: number } | undefined)?.links ?? 0),
+    },
+  };
+}
+
+export async function getCurrentUser(): Promise<UserProfile> {
+  const raw = await authFetch<Record<string, unknown>>("/api/v1/auth/me");
+  return normalizeUserProfile(raw);
+}
+
+export async function listApiKeys(): Promise<ApiKeySummary[]> {
+  const data = await authFetch<Array<Record<string, unknown>>>(
+    "/api/v1/auth/api-keys",
+  );
+  if (!Array.isArray(data)) return [];
+  return data.map((key) => ({
+    _id: String(key._id ?? key.id ?? ""),
+    name: String(key.name ?? "Default"),
+    prefix: String(key.prefix ?? ""),
+    lastUsedAt: (key.lastUsedAt as string | null) ?? null,
+    createdAt: String(key.createdAt ?? ""),
+  }));
+}
+
+export async function createApiKey(name: string): Promise<CreateApiKeyResponse> {
+  return authFetch<CreateApiKeyResponse>("/api/v1/auth/api-keys", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function revokeApiKey(id: string): Promise<void> {
+  await authFetch<void>(`/api/v1/auth/api-keys/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
 export async function logout(): Promise<void> {
   await authFetch<void>("/api/v1/auth/logout", {
     method: "POST",
   });
 
-  // Clear client-side login timestamp so the frontend won't consider the
-  // user authenticated after server logout. `localStorage` is only
-  // available in the browser.
   try {
     if (typeof window !== "undefined") {
       localStorage.removeItem("loginAt");

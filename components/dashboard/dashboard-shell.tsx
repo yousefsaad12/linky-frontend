@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, RefreshCw, LogOut, User } from "lucide-react";
+import { ArrowLeft, Key, RefreshCw, LogOut, User } from "lucide-react";
+import { PlanBadge } from "@/components/dashboard/plan-badge";
+import { PlanUsageBar } from "@/components/dashboard/plan-usage-bar";
+import { useAuth } from "@/hooks/use-auth";
 import { AnalyticsPeriodSelector } from "@/components/analytics";
 import { Button } from "@/components/ui/button";
 import { site } from "@/lib/site";
@@ -24,12 +27,13 @@ const TABS: { id: DashboardTab; label: string; href: string }[] = [
 interface DashboardShellProps {
   title: string;
   subtitle?: string;
-  period: AnalyticsPeriod;
-  onPeriodChange: (period: AnalyticsPeriod) => void;
+  period?: AnalyticsPeriod;
+  onPeriodChange?: (period: AnalyticsPeriod) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
   lastUpdated?: Date | null;
   activeTab?: DashboardTab;
+  minimal?: boolean;
   children: React.ReactNode;
   actions?: React.ReactNode;
 }
@@ -43,11 +47,13 @@ export function DashboardShell({
   refreshing,
   lastUpdated,
   activeTab = "overview",
+  minimal = false,
   children,
   actions,
 }: DashboardShellProps) {
   const pathname = usePathname();
   const onLinkDetail = pathname.startsWith("/dashboard/links/");
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -101,8 +107,32 @@ export function DashboardShell({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
+              {user ? (
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <PlanBadge plan={user.plan} />
+                  <PlanUsageBar
+                    plan={user.plan}
+                    usage={user.usage}
+                    limits={user.limits}
+                    className="hidden sm:flex"
+                  />
+                </div>
+              ) : null}
               {actions}
+              {user?.plan === "pro" ? (
+                <Link href="/dashboard/api-keys">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full font-mono text-xs"
+                  >
+                    <Key className="h-3.5 w-3.5 mr-1.5" />
+                    API keys
+                  </Button>
+                </Link>
+              ) : null}
               <Link href="/profile">
                 <Button
                   type="button"
@@ -139,14 +169,16 @@ export function DashboardShell({
                 <LogOut className="h-3.5 w-3.5 mr-1.5" />
                 Logout
               </Button>
-              <AnalyticsPeriodSelector
-                period={period}
-                onChange={onPeriodChange}
-              />
+              {!minimal && period && onPeriodChange ? (
+                <AnalyticsPeriodSelector
+                  period={period}
+                  onChange={onPeriodChange}
+                />
+              ) : null}
             </div>
           </div>
 
-          {!onLinkDetail ? (
+          {!minimal && !onLinkDetail ? (
             <nav
               className="flex flex-wrap gap-1"
               aria-label="Dashboard sections"

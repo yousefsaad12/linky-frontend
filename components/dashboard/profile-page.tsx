@@ -1,8 +1,11 @@
 "use client";
 
-import { User, LogOut, Settings } from "lucide-react";
+import Link from "next/link";
+import { User, LogOut, Settings, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PlanBadge } from "@/components/dashboard/plan-badge";
+import { PlanUsageBar } from "@/components/dashboard/plan-usage-bar";
 import { site } from "@/lib/site";
 import { logout } from "@/lib/auth";
 import { AuthApiError } from "@/lib/auth";
@@ -81,22 +84,44 @@ export function ProfilePage() {
           <div className="h-16 w-16 rounded-full bg-foreground/10 flex items-center justify-center">
             <User className="h-8 w-8 text-foreground/60" />
           </div>
-          <div>
-            <h3 className="font-display text-lg">{user?.name || "User"}</h3>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-display text-lg">{user?.name || "User"}</h3>
+              {user ? <PlanBadge plan={user.plan} /> : null}
+            </div>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
         </div>
 
-        <div className="space-y-4 pt-4 border-t border-foreground/10">
-          <div className="grid grid-cols-1 gap-4 text-center">
-            <div className="px-3 py-4 rounded-md bg-muted/5">
-              <div className="text-sm text-muted-foreground">Member since</div>
-              <div className="text-lg font-semibold">
-                {user ? "N/A" : "N/A"}
-              </div>
-            </div>
+        {user ? (
+          <div className="space-y-4 pt-4 border-t border-foreground/10">
+            <PlanUsageBar
+              plan={user.plan}
+              usage={user.usage}
+              limits={user.limits}
+            />
+            {user.plan === "pro" ? (
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-start font-mono text-xs"
+              >
+                <Link href="/dashboard/api-keys">
+                  <Key className="h-3.5 w-3.5 mr-2" />
+                  Manage API keys
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-start font-mono text-xs"
+              >
+                <Link href="/#pricing">Upgrade to Pro for API access</Link>
+              </Button>
+            )}
           </div>
-        </div>
+        ) : null}
       </Card>
 
       <Card className="p-6">

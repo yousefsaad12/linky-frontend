@@ -35,7 +35,7 @@ export function DocsContent() {
       })),
     },
     {
-      title: "Shorten Links",
+      title: "Links & API Keys",
       icon: <LinkIcon className="h-3 w-3" />,
       items: API_ENDPOINTS.filter(e => e.category === "url").map(e => ({
         id: e.id,
@@ -107,10 +107,68 @@ export function DocsContent() {
           </h2>
           <div className="space-y-3 lg:space-y-4 text-white/70 text-xs sm:text-sm leading-relaxed">
             <p>
-              Most API requests require developer-level authentication. You can obtain your personal API keys directly within the {site.name} Developer Dashboard.
+              lnqo supports two authentication modes. Use the one that matches how
+              you are calling the API.
             </p>
             <p>
-              Authenticate your requests by passing your API key in the <code className="font-mono text-white px-1.5 py-0.5 rounded bg-white/5 border border-white/10">Authorization</code> HTTP header.
+              <strong className="text-white font-medium">Dashboard (cookie)</strong>{" "}
+              — When you sign in with Google, the API sets an httpOnly{" "}
+              <code className="font-mono text-white px-1.5 py-0.5 rounded bg-white/5 border border-white/10">jwt</code>{" "}
+              cookie. The {site.name} dashboard sends this automatically with{" "}
+              <code className="font-mono text-white px-1.5 py-0.5 rounded bg-white/5 border border-white/10">credentials: &quot;include&quot;</code>.
+              Cookie auth is required to manage API keys.
+            </p>
+            <p>
+              <strong className="text-white font-medium">Pro API (Bearer)</strong>{" "}
+              — Server-side integrations use an API key in the{" "}
+              <code className="font-mono text-white px-1.5 py-0.5 rounded bg-white/5 border border-white/10">Authorization</code>{" "}
+              header. Create keys from the{" "}
+              <a href="/dashboard/api-keys" className="text-white underline underline-offset-2 hover:text-white/80">
+                dashboard API keys page
+              </a>{" "}
+              (Pro plan only).
+            </p>
+          </div>
+
+          <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 lg:p-5 space-y-3">
+            <h4 className="text-[10px] lg:text-xs font-mono text-white font-medium uppercase tracking-wider">Plan limits</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[10px] lg:text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/40 font-mono">
+                    <th className="py-2 pr-4 font-medium">Feature</th>
+                    <th className="py-2 pr-4 font-medium">Free</th>
+                    <th className="py-2 font-medium">Pro</th>
+                  </tr>
+                </thead>
+                <tbody className="text-white/70">
+                  <tr className="border-b border-white/5">
+                    <td className="py-2 pr-4">Short links</td>
+                    <td className="py-2 pr-4">100</td>
+                    <td className="py-2">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-white/5">
+                    <td className="py-2 pr-4">Click history</td>
+                    <td className="py-2 pr-4">30 days</td>
+                    <td className="py-2">365 days</td>
+                  </tr>
+                  <tr className="border-b border-white/5">
+                    <td className="py-2 pr-4">City analytics</td>
+                    <td className="py-2 pr-4">—</td>
+                    <td className="py-2">Included</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 pr-4">REST API (Bearer)</td>
+                    <td className="py-2 pr-4">—</td>
+                    <td className="py-2">Included</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-[10px] lg:text-xs text-white/40 leading-relaxed">
+              Exceeding link limits returns HTTP 403 with a message like{" "}
+              <code className="font-mono text-white/60">Link limit reached (100). Upgrade to Pro for unlimited links.</code>{" "}
+              Pro-only features return 403 when called on a Free plan.
             </p>
           </div>
 
@@ -122,17 +180,34 @@ export function DocsContent() {
           </div>
         </div>
 
-        <div className="lg:col-span-5 space-y-2 lg:space-y-3">
-          <div className="text-[10px] lg:text-xs font-mono text-white/40 mb-1">Header Example</div>
-          <div className="bg-[#181818] border border-white/5 rounded-xl overflow-hidden shadow-xl">
-            <div className="px-3 lg:px-4 py-2 border-b border-white/5 bg-[#1e1e1e] flex items-center justify-between">
-              <span className="text-[10px] font-mono text-white/40">HTTP Headers</span>
+        <div className="lg:col-span-5 space-y-4">
+          <div className="space-y-2 lg:space-y-3">
+            <div className="text-[10px] lg:text-xs font-mono text-white/40 mb-1">Pro API (Bearer)</div>
+            <div className="bg-[#181818] border border-white/5 rounded-xl overflow-hidden shadow-xl">
+              <div className="px-3 lg:px-4 py-2 border-b border-white/5 bg-[#1e1e1e] flex items-center justify-between">
+                <span className="text-[10px] font-mono text-white/40">HTTP Headers</span>
+              </div>
+              <div className="p-3 lg:p-4 overflow-x-auto">
+                <pre className="text-[10px] lg:text-xs font-mono text-white/80 whitespace-pre">
+                  Authorization: Bearer <span className="text-amber-400">YOUR_API_KEY</span>{"\n"}
+                  Content-Type: application/json
+                </pre>
+              </div>
             </div>
-            <div className="p-3 lg:p-4 overflow-x-auto">
-              <pre className="text-[10px] lg:text-xs font-mono text-white/80 whitespace-pre">
-                Authorization: Bearer <span className="text-amber-400">YOUR_API_KEY</span>{"\n"}
-                Content-Type: application/json
-              </pre>
+          </div>
+          <div className="space-y-2 lg:space-y-3">
+            <div className="text-[10px] lg:text-xs font-mono text-white/40 mb-1">Dashboard (cookie)</div>
+            <div className="bg-[#181818] border border-white/5 rounded-xl overflow-hidden shadow-xl">
+              <div className="px-3 lg:px-4 py-2 border-b border-white/5 bg-[#1e1e1e] flex items-center justify-between">
+                <span className="text-[10px] font-mono text-white/40">fetch example</span>
+              </div>
+              <div className="p-3 lg:p-4 overflow-x-auto">
+                <pre className="text-[10px] lg:text-xs font-mono text-white/80 whitespace-pre">
+{`fetch("${site.apiUrl}/api/v1/auth/me", {
+  credentials: "include"
+})`}
+                </pre>
+              </div>
             </div>
           </div>
         </div>

@@ -6,6 +6,8 @@ import { useState } from "react";
 import { ClickTimelineChart } from "@/components/analytics/click-timeline-chart";
 import { LinkBreakdownPanel } from "@/components/analytics/link-breakdown-panel";
 import { AnimatedNumber } from "@/components/ui/animated-number";
+import { ClampedHistoryBanner } from "@/components/dashboard/clamped-history-banner";
+import { useAuth } from "@/hooks/use-auth";
 import { truncateUrl } from "@/lib/analytics/format";
 import type { AnalyticsPeriod, AnalyticsUrlDetail } from "@/lib/analytics/types";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,7 @@ interface LinkDetailViewProps {
 }
 
 export function LinkDetailView({ data, period }: LinkDetailViewProps) {
+  const { user } = useAuth();
   const [copied, setCopied] = useState<"short" | "dest" | null>(null);
 
   const copy = async (text: string, which: "short" | "dest") => {
@@ -30,6 +33,11 @@ export function LinkDetailView({ data, period }: LinkDetailViewProps) {
 
   return (
     <div className="space-y-px">
+      {data.clamped ? (
+        <ClampedHistoryBanner
+          clickHistoryDays={user?.limits.clickHistoryDays ?? 30}
+        />
+      ) : null}
       <div className="border border-foreground/10 bg-background p-6 lg:p-8">
         <Link
           href="/dashboard"

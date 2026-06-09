@@ -5,6 +5,8 @@ import { ClickTimelineChart } from "@/components/analytics/click-timeline-chart"
 import { RecentClicksList } from "@/components/analytics/recent-clicks-list";
 import { TopLinksTable } from "@/components/analytics/top-links-table";
 import { BreakdownGrid } from "@/components/dashboard/breakdown-grid";
+import { ClampedHistoryBanner } from "@/components/dashboard/clamped-history-banner";
+import { useAuth } from "@/hooks/use-auth";
 import type {
   AnalyticsOverviewData,
   AnalyticsPeriod,
@@ -24,6 +26,7 @@ export function DashboardOverview({
   recentClicks,
   period,
 }: DashboardOverviewProps) {
+  const { user } = useAuth();
   const periodClicks = data.summary.clicksInPeriod;
   const avgPerDay =
     period === "24h"
@@ -32,6 +35,11 @@ export function DashboardOverview({
 
   return (
     <div className="space-y-px">
+      {data.clamped ? (
+        <ClampedHistoryBanner
+          clickHistoryDays={user?.limits.clickHistoryDays ?? 30}
+        />
+      ) : null}
       <AnalyticsKpiGrid summary={data.summary} period={period} variant="full" />
 
       <div className="grid gap-px bg-foreground/10 border-x border-b border-foreground/10 lg:grid-cols-3">

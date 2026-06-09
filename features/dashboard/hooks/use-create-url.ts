@@ -26,6 +26,16 @@ export function useCreateUrl() {
           description: "Please sign in to create URLs",
           variant: "destructive",
         });
+      } else if (
+        error instanceof UrlApiError &&
+        error.status === 403 &&
+        error.message.toLowerCase().includes("link limit")
+      ) {
+        toast({
+          title: "Link limit reached",
+          description: error.message,
+          variant: "destructive",
+        });
       } else if (error instanceof UrlApiError) {
         toast({
           title: "Failed to create URL",

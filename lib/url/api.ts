@@ -109,17 +109,59 @@ async function urlFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+type CreateUrlApiData = {
+  url: {
+    shortCode: string;
+    originalUrl: string;
+    clicks?: number;
+    createdAt: string;
+  };
+  shortUrl: string;
+};
+
 export async function createShortUrl(
   data: CreateUrlRequest,
 ): Promise<CreateUrlResponse> {
-  return urlFetch<CreateUrlResponse>("/api/v1/url", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
+  const raw = await urlFetch<CreateUrlApiData | CreateUrlResponse>(
+    "/api/v1/url",
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
+
+  if (raw && typeof raw === "object" && "url" in raw && raw.url) {
+    return {
+      shortCode: raw.url.shortCode,
+      originalUrl: raw.url.originalUrl,
+      shortUrl: raw.shortUrl,
+      clicks: raw.url.clicks ?? 0,
+      createdAt: raw.url.createdAt,
+    };
+  }
+
+  return raw as CreateUrlResponse;
 }
 
 export async function getAllUrls(): Promise<GetAllUrlsResponse> {
-  return urlFetch<GetAllUrlsResponse>("/api/v1/url");
+  const raw = await urlFetch<UrlItem[] | GetAllUrlsResponse>("/api/v1/url");
+  const base = site.apiUrl.replace(/\/+$/, "");
+
+  if (Array.isArray(raw)) {
+    return {
+      urls: raw.map((item) => ({
+        shortCode: item.shortCode,
+        originalUrl: item.originalUrl,
+        shortUrl: item.shortUrl || `${base}/${item.shortCode}`,
+        clicks: item.clicks ?? 0,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      })),
+      total: raw.length,
+    };
+  }
+
+  return raw;
 }
 
 export async function deleteUrl(shortCode: string): Promise<void> {

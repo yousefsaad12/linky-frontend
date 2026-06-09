@@ -17,12 +17,14 @@ import { Plus } from "lucide-react";
 import { createShortUrl, type CreateUrlRequest } from "@/lib/url";
 import { UrlAuthError, UrlApiError } from "@/lib/url";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export function CreateUrlDialog() {
   const [open, setOpen] = useState(false);
   const [originalUrl, setOriginalUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,14 +42,30 @@ export function CreateUrlDialog() {
       
       setOpen(false);
       setOriginalUrl("");
-      
-      // Refresh the page to show the new link
+      await refreshUser().catch(() => undefined);
       window.location.reload();
     } catch (error) {
       if (error instanceof UrlAuthError) {
         toast({
           title: "Authentication required",
           description: "Please sign in to create URLs",
+          variant: "destructive",
+        });
+      } else if (
+        error instanceof UrlApiError &&
+        error.status === 403 &&
+        error.message.toLowerCase().includes("link limit")
+      ) {
+        toast({
+          title: "Link limit reached",
+          description: (
+            <span>
+              {error.message}{" "}
+              <a href="/#pricing" className="underline font-medium">
+                Upgrade to Pro
+              </a>
+            </span>
+          ),
           variant: "destructive",
         });
       } else if (error instanceof UrlApiError) {
