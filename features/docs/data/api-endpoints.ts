@@ -95,50 +95,6 @@ export const API_ENDPOINTS: Endpoint[] = [
     responseDescription: "204 No Content on success. 404 if the link is not found.",
   },
   {
-    id: "list-api-keys",
-    category: "url",
-    method: "GET",
-    path: "/api/v1/auth/api-keys",
-    title: "List API Keys",
-    description:
-      "Lists active API keys for the signed-in Pro user. Cookie authentication only — API keys cannot manage themselves via Bearer token.",
-    authRequired: true,
-    responseDescription:
-      "200 OK with status success, results count, and data array of key metadata (name, prefix, lastUsedAt, createdAt). Pro plan required.",
-  },
-  {
-    id: "create-api-key",
-    category: "url",
-    method: "POST",
-    path: "/api/v1/auth/api-keys",
-    title: "Create API Key",
-    description:
-      "Creates a new API key (max 5 active per user). The raw key is returned once in the response. Cookie authentication only. Manage keys from the dashboard API keys page.",
-    authRequired: true,
-    bodyParams: [
-      {
-        name: "name",
-        type: "string",
-        required: false,
-        description: "Human-readable label (max 64 chars). Defaults to \"Default\".",
-      },
-    ],
-    responseDescription:
-      "201 Created with id, name, prefix, key (shown once), and createdAt. Pro plan required.",
-  },
-  {
-    id: "revoke-api-key",
-    category: "url",
-    method: "DELETE",
-    path: "/api/v1/auth/api-keys/:id",
-    title: "Revoke API Key",
-    description:
-      "Revokes an API key immediately. Cookie authentication only. Pro plan required.",
-    authRequired: true,
-    responseDescription:
-      "200 OK with status success on revoke. Path parameter :id is the API key document id. 404 if not found.",
-  },
-  {
     id: "analytics-overview",
     category: "analytics",
     method: "GET",

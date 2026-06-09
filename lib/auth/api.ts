@@ -4,6 +4,7 @@ import type {
   CreateApiKeyResponse,
   UserProfile,
 } from "./types";
+import { toast } from "@/hooks/use-toast";
 
 export class AuthApiError extends Error {
   status: number;
@@ -21,7 +22,7 @@ type ApiEnvelope<T> = {
   message?: string;
 };
 
-async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function authFetch<T>(path: string, init?: RequestInit, options?: { suppressToasts?: boolean }): Promise<T> {
   const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
   const res = await fetch(url, {
@@ -39,15 +40,37 @@ async function authFetch<T>(path: string, init?: RequestInit): Promise<T> {
     body = await res.json();
   } catch {
     if (!res.ok) {
-      throw new AuthApiError(res.statusText || "Request failed", res.status);
+      const message = res.statusText || "Request failed";
+      if (!options?.suppressToasts) {
+        toast({
+          variant: "destructive",
+          title: `Error ${res.status}`,
+          description: message,
+        });
+      }
+      throw new AuthApiError(message, res.status);
     }
   }
 
   if (!res.ok) {
-    throw new AuthApiError(
-      (body as ApiEnvelope<T>).message || res.statusText || "Request failed",
-      res.status,
-    );
+    const message = (body as ApiEnvelope<T>).message || res.statusText || "Request failed";
+    if (!options?.suppressToasts) {
+      toast({
+        variant: "destructive",
+        title: `Error ${res.status}`,
+        description: message,
+      });
+    }
+    throw new AuthApiError(message, res.status);
+  }
+
+  // Show success toast for successful mutations (POST, PUT, DELETE, PATCH)
+  if (res.ok && init?.method && init.method !== "GET" && init.method !== "HEAD" && !options?.suppressToasts) {
+    const successMessage = (body as ApiEnvelope<T>).message || "Operation successful";
+    toast({
+      title: "Success",
+      description: successMessage,
+    });
   }
 
   if (
@@ -99,7 +122,7 @@ function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
 
 export async function getCurrentUser(retryCount = 0): Promise<UserProfile> {
   try {
-    const raw = await authFetch<Record<string, unknown>>("/api/v1/auth/me");
+    const raw = await authFetch<Record<string, unknown>>("/api/v1/auth/me", undefined, { suppressToasts: retryCount > 0 });
     return normalizeUserProfile(raw);
   } catch (err) {
     // Retry on 401 with exponential backoff (up to 3 retries)

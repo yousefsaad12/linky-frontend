@@ -69,6 +69,14 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
       const codes = overviewData.topLinks.map((l: { shortCode: string }) => l.shortCode);
       setAvailableCompareCodes(codes);
 
+      // Don't calculate if there are no links
+      if (codes.length === 0) {
+        setComparison([]);
+        setCompareCodes([]);
+        setLastUpdated(new Date());
+        return;
+      }
+
       const selected =
         codesOverride ??
         (compareCodes.length >= 2 ? compareCodes : codes.slice(0, 3));
@@ -85,15 +93,15 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
         .filter((link: { shortCode: string }) => selected.includes(link.shortCode))
         .map((link: { shortCode: string; originalUrl: string; clicks: number; totalClicks: number }) => {
           const periodClicks = link.clicks;
-          const shareOfPeriod = totalClicksInPeriod > 0 
-            ? (periodClicks / totalClicksInPeriod) * 100 
+          const shareOfPeriod = totalClicksInPeriod > 0
+            ? (periodClicks / totalClicksInPeriod) * 100
             : 0;
-          const avgPerDay = period === "24h" 
-            ? periodClicks 
+          const avgPerDay = period === "24h"
+            ? periodClicks
             : Math.round(periodClicks / (period === "7d" ? 7 : 30));
           const leaderClicks = Math.max(...overviewData.topLinks.map((l: { clicks: number }) => l.clicks));
-          const vsLeaderPercent = leaderClicks > 0 
-            ? ((periodClicks / leaderClicks) * 100) 
+          const vsLeaderPercent = leaderClicks > 0
+            ? ((periodClicks / leaderClicks) * 100)
             : 0;
           const isLeader = periodClicks === leaderClicks;
 
