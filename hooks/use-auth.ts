@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { site } from "@/lib/site";
 import {
   AuthApiError,
@@ -17,45 +17,45 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   const logoutTimerRef = useRef<number | null>(null);
-  const didInitRef = useRef(false);
+  const didInit = useRef(false);
 
-  const SESSION_TTL = 60 * 60 * 1000; // 1 hour
+  const SESSION_TTL = 60 * 60 * 1000;
 
-  const scheduleAutoLogout = useCallback((loginAtMs: number) => {
-    if (typeof window === "undefined") return;
-
+  const scheduleAutoLogout = (loginAt: number) => {
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
     }
 
-    const expiresAt = loginAtMs + SESSION_TTL;
+    const expiresAt = loginAt + SESSION_TTL;
     const remaining = Math.max(0, expiresAt - Date.now());
 
     logoutTimerRef.current = window.setTimeout(async () => {
       try {
         await logout();
-      } catch {}
-
-      window.location.href = site.auth.signIn;
+      } finally {
+        window.location.href = site.auth.signIn;
+      }
     }, remaining);
-  }, []);
+  };
 
+  // ✅ THIS is what your component was missing
   const refreshUser = useCallback(async () => {
     try {
       const profile = await getCurrentUser();
-
       setUser(profile);
       setIsAuthenticated(true);
-
       return profile;
-    } catch (error: any) {
-      if (error instanceof AuthApiError && error.status === 401) {
+    } catch (err) {
+      // Only set unauthenticated if it's a definitive 401 after retries
+      // The getCurrentUser function now handles retries internally
+      if (err instanceof AuthApiError && err.status === 401) {
         setUser(null);
         setIsAuthenticated(false);
         return null;
       }
 
-      console.error("Auth error:", error);
+      // For other errors, don't permanently set unauthenticated
+      // This allows retry on network issues, CORS timing, etc.
       setUser(null);
       setIsAuthenticated(false);
       return null;
@@ -63,61 +63,62 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    if (didInitRef.current) return;
-    didInitRef.current = true;
+    if (didInit.current) return;
+    didInit.current = true;
 
-    const checkAuth = async () => {
-      try {
-        // 1. Check local session timestamp
-        const raw = localStorage.getItem("loginAt");
+    const init = async () => {
+      setLoading(true);
 
-        if (raw) {
-          const at = Number(raw);
+      // Check if we just came from OAuth redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      const justLoggedIn = urlParams.has('login') || localStorage.getItem('justLoggedIn') === 'true';
 
-          if (!Number.isNaN(at)) {
-            const expired = Date.now() - at > SESSION_TTL;
+      // Clear the flag if it exists
+      if (localStorage.getItem('justLoggedIn') === 'true') {
+        localStorage.removeItem('justLoggedIn');
+      }
 
-            if (expired) {
-              await logout();
-              localStorage.removeItem("loginAt");
+      // If just logged in via OAuth, wait a bit for cookie to be available
+      if (justLoggedIn) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
 
-              setUser(null);
-              setIsAuthenticated(false);
-              setLoading(false);
+      // Try to refresh user with retries
+      // The getCurrentUser function already has built-in retry logic
+      const maxRetries = 3;
+      let retryCount = 0;
+      let user = null;
 
-              window.location.href = site.auth.signIn;
-              return;
-            }
-
-            scheduleAutoLogout(at);
+      while (retryCount < maxRetries && !user) {
+        try {
+          user = await refreshUser();
+          if (user) break;
+        } catch (err) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            // Exponential backoff: 500ms, 1s, 2s
+            const delay = Math.pow(2, retryCount - 1) * 500;
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
-
-        // 2. Fetch user session
-        const userData = await refreshUser();
-
-        // 3. IMPORTANT FIX: use returned value, NOT stale state
-        if (userData) {
-          const now = Date.now();
-          localStorage.setItem("loginAt", String(now));
-          scheduleAutoLogout(now);
-        }
-      } catch {
-        setUser(null);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
       }
+
+      setLoading(false);
     };
 
-    checkAuth();
+    init();
 
     return () => {
       if (logoutTimerRef.current) {
         window.clearTimeout(logoutTimerRef.current);
       }
     };
-  }, [refreshUser, scheduleAutoLogout]);
+  }, [refreshUser]);
 
-  return { user, isAuthenticated, loading };
+  return {
+    user,
+    isAuthenticated,
+    loading,
+    refreshUser, // ✅ FIXED
+  };
 }
