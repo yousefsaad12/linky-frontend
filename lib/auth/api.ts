@@ -88,17 +88,21 @@ async function authFetch<T>(path: string, init?: RequestInit, options?: { suppre
 type PlanLimits = UserProfile["limits"];
 
 function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
+  const plan = (raw.plan as UserProfile["plan"]) || "free";
+  const isPro = plan === "pro";
+
   const limits = (raw.limits as PlanLimits | undefined) ?? {
-    maxLinks: 100,
-    clickHistoryDays: 30,
+    maxLinks: isPro ? null : 100,
+    clickHistoryDays: isPro ? 365 : 30,
   };
   const maxLinks = limits.maxLinks;
+
   return {
     id: String(raw.id ?? raw._id ?? ""),
     email: String(raw.email ?? ""),
     name: raw.name ? String(raw.name) : undefined,
     avatar: raw.avatar ? String(raw.avatar) : undefined,
-    plan: (raw.plan as UserProfile["plan"]) || "free",
+    plan,
     limits: {
       maxLinks:
         maxLinks === null || maxLinks === undefined || !Number.isFinite(maxLinks)
@@ -110,9 +114,9 @@ function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
       basicAnalytics: true,
       deviceAnalytics: true,
       countryAnalytics: true,
-      cityAnalytics: false,
-      advancedAnalytics: false,
-      apiAccess: false,
+      cityAnalytics: isPro,
+      advancedAnalytics: isPro,
+      apiAccess: isPro,
     },
     usage: {
       links: Number((raw.usage as { links?: number } | undefined)?.links ?? 0),
