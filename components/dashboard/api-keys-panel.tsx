@@ -142,18 +142,18 @@ export function ApiKeysPanel() {
 
   if (!hasApiAccess) {
     return (
-      <Card className="p-8 text-center space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5">
-          <Key className="h-6 w-6 text-muted-foreground" />
+      <Card className="p-12 text-center space-y-6 border-foreground/10">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-foreground/10">
+          <Key className="h-8 w-8 text-foreground" />
         </div>
-        <div className="space-y-2">
-          <h2 className="font-display text-xl">API access is a Pro feature</h2>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+        <div className="space-y-3">
+          <h2 className="font-display text-2xl text-foreground">API access is a Pro feature</h2>
+          <p className="text-base text-muted-foreground max-w-md mx-auto leading-relaxed">
             Upgrade to Pro to create API keys and integrate lnqo into your
             applications with Bearer token authentication.
           </p>
         </div>
-        <Button asChild className="rounded-full">
+        <Button asChild className="rounded-full px-8 h-12 text-base">
           <Link href="/#pricing">View pricing</Link>
         </Button>
       </Card>
@@ -161,53 +161,63 @@ export function ApiKeysPanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl tracking-tight">API keys</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="font-display text-3xl tracking-tight text-foreground">API keys</h2>
+          <p className="text-base text-muted-foreground mt-2 leading-relaxed">
             Create keys for programmatic access. Keys are shown once at creation.
           </p>
         </div>
         <Button
-          size="sm"
-          className="rounded-full"
+          size="lg"
+          className="rounded-full px-6 h-12"
           onClick={() => setCreateOpen(true)}
           disabled={keys.length >= 5}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-5 w-5 mr-2" />
           Create key
         </Button>
       </div>
 
-      <Alert>
-        <Key className="h-4 w-4" />
-        <AlertTitle>Keep keys secret</AlertTitle>
-        <AlertDescription>
+      <Alert className="border-foreground/20 bg-foreground/5">
+        <Key className="h-5 w-5 text-foreground" />
+        <AlertTitle className="text-foreground font-medium">Keep keys secret</AlertTitle>
+        <AlertDescription className="text-muted-foreground text-base">
           Use Bearer authentication in server-side code only. Never expose keys in
           client-side JavaScript.
         </AlertDescription>
       </Alert>
 
       {loading ? (
-        <div className="text-sm text-muted-foreground">Loading keys…</div>
+        <div className="text-base text-muted-foreground py-8">Loading keys…</div>
       ) : keys.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
-          No API keys yet. Create one to get started.
+        <Card className="p-12 text-center space-y-4 border-foreground/10">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-foreground/5">
+            <Key className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="font-display text-xl text-foreground">No API keys yet</h3>
+            <p className="text-base text-muted-foreground">
+              Create your first API key to get started with programmatic access.
+            </p>
+          </div>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {keys.map((key) => (
             <Card
               key={key._id}
-              className="flex flex-wrap items-center justify-between gap-4 p-4"
+              className="flex flex-wrap items-center justify-between gap-6 p-6 border-foreground/10 hover:border-foreground/20 transition-colors"
             >
-              <div className="min-w-0 space-y-1">
-                <p className="font-medium truncate">{key.name}</p>
-                <p className="text-xs font-mono text-muted-foreground">
-                  {key.prefix}…
-                </p>
-                <p className="text-[10px] text-muted-foreground">
+              <div className="min-w-0 space-y-2 flex-1">
+                <div className="flex items-center gap-3">
+                  <p className="font-semibold text-lg text-foreground">{key.name}</p>
+                  <span className="px-2 py-1 rounded-full bg-foreground/5 text-xs font-mono text-foreground">
+                    {key.prefix}…
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">
                   Created {formatDate(key.createdAt)} · Last used{" "}
                   {formatDate(key.lastUsedAt)}
                 </p>
@@ -215,11 +225,11 @@ export function ApiKeysPanel() {
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                className="rounded-full text-destructive hover:text-destructive"
+                size="lg"
+                className="rounded-full text-destructive hover:text-destructive hover:bg-destructive/10 px-6 h-11"
                 onClick={() => setRevokeTarget(key)}
               >
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                <Trash2 className="h-4 w-4 mr-2" />
                 Revoke
               </Button>
             </Card>
@@ -228,17 +238,17 @@ export function ApiKeysPanel() {
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <form onSubmit={handleCreate}>
             <DialogHeader>
-              <DialogTitle>Create API key</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-2xl">Create API key</DialogTitle>
+              <DialogDescription className="text-base text-muted-foreground">
                 Give your key a name so you can identify it later.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-6">
               <div className="grid gap-2">
-                <Label htmlFor="key-name">Key name</Label>
+                <Label htmlFor="key-name" className="text-base font-medium">Key name</Label>
                 <Input
                   id="key-name"
                   placeholder="Production server"
@@ -247,6 +257,7 @@ export function ApiKeysPanel() {
                   disabled={creating}
                   maxLength={64}
                   required
+                  className="text-base h-11"
                 />
               </div>
             </div>
@@ -256,10 +267,11 @@ export function ApiKeysPanel() {
                 variant="outline"
                 onClick={() => setCreateOpen(false)}
                 disabled={creating}
+                className="rounded-full h-11 px-6"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={creating || !keyName.trim()}>
+              <Button type="submit" disabled={creating || !keyName.trim()} className="rounded-full h-11 px-6">
                 {creating ? "Creating…" : "Create"}
               </Button>
             </DialogFooter>
@@ -268,32 +280,39 @@ export function ApiKeysPanel() {
       </Dialog>
 
       <Dialog open={showKeyDialog} onOpenChange={setShowKeyDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Save your API key</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl">Save your API key</DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground">
               Copy this key now. You won&apos;t be able to see it again.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
-            <code className="flex-1 text-xs font-mono break-all">
+          <div className="flex items-center gap-3 rounded-lg border border-foreground/20 bg-foreground/5 p-4">
+            <code className="flex-1 text-sm font-mono break-all text-foreground">
               {newKeyValue}
             </code>
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="lg"
               onClick={handleCopyKey}
+              className="rounded-full h-11 px-4"
             >
               {copied ? (
-                <Check className="h-4 w-4" />
+                <>
+                  <Check className="h-5 w-5 mr-2" />
+                  Copied
+                </>
               ) : (
-                <Copy className="h-4 w-4" />
+                <>
+                  <Copy className="h-5 w-5 mr-2" />
+                  Copy
+                </>
               )}
             </Button>
           </div>
           <DialogFooter>
-            <Button type="button" onClick={() => setShowKeyDialog(false)}>
+            <Button type="button" onClick={() => setShowKeyDialog(false)} className="rounded-full h-11 px-6">
               Done
             </Button>
           </DialogFooter>
@@ -304,20 +323,20 @@ export function ApiKeysPanel() {
         open={!!revokeTarget}
         onOpenChange={(open) => !open && setRevokeTarget(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-[500px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Revoke API key?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-xl">Revoke API key?</AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-muted-foreground">
               This will immediately invalidate &ldquo;{revokeTarget?.name}
               &rdquo;. Any integrations using this key will stop working.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={revoking}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={revoking} className="rounded-full h-11 px-6">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRevoke}
               disabled={revoking}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full h-11 px-6"
             >
               {revoking ? "Revoking…" : "Revoke key"}
             </AlertDialogAction>
