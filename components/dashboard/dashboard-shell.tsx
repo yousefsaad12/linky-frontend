@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Key, RefreshCw, LogOut, User } from "lucide-react";
+import { ArrowLeft, Key, RefreshCw, LogOut, User, BarChart3 } from "lucide-react";
 import { PlanBadge } from "@/components/dashboard/plan-badge";
 import { PlanUsageBar } from "@/components/dashboard/plan-usage-bar";
+import { QuotaUsageDialog } from "@/components/dashboard/quota-usage-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { AnalyticsPeriodSelector } from "@/components/analytics";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,7 @@ export function DashboardShell({
   const onLinkDetail = pathname.startsWith("/dashboard/links/");
   const { user } = useAuth();
   const { toast } = useToast();
+  const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -120,6 +123,18 @@ export function DashboardShell({
                 </div>
               ) : null}
               {actions}
+              {user ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full font-mono text-xs"
+                  onClick={() => setQuotaDialogOpen(true)}
+                >
+                  <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
+                  Quota
+                </Button>
+              ) : null}
               {user?.plan === "pro" ? (
                 <Link href="/dashboard/api-keys">
                   <Button
@@ -211,6 +226,17 @@ export function DashboardShell({
       <main className="mx-auto max-w-[1400px] px-6 py-8 lg:px-12 lg:py-10">
         {children}
       </main>
+
+      {user ? (
+        <QuotaUsageDialog
+          open={quotaDialogOpen}
+          onOpenChange={setQuotaDialogOpen}
+          plan={user.plan}
+          usage={user.usage}
+          limits={user.limits}
+          features={user.features}
+        />
+      ) : null}
     </div>
   );
 }
