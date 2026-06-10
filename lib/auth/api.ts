@@ -120,20 +120,9 @@ function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
   };
 }
 
-export async function getCurrentUser(retryCount = 0): Promise<UserProfile> {
-  try {
-    const raw = await authFetch<Record<string, unknown>>("/api/v1/auth/me", undefined, { suppressToasts: retryCount > 0 });
-    return normalizeUserProfile(raw);
-  } catch (err) {
-    // Retry on 401 with exponential backoff (up to 1 retry)
-    // This handles cookie timing issues after OAuth redirect
-    if (err instanceof AuthApiError && err.status === 401 && retryCount < 1) {
-      const delay = Math.pow(2, retryCount) * 500; // 500ms
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return getCurrentUser(retryCount + 1);
-    }
-    throw err;
-  }
+export async function getCurrentUser(): Promise<UserProfile> {
+  const raw = await authFetch<Record<string, unknown>>("/api/v1/auth/me", undefined, { suppressToasts: true });
+  return normalizeUserProfile(raw);
 }
 
 export async function listApiKeys(): Promise<ApiKeySummary[]> {
