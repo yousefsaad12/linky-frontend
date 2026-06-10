@@ -44,7 +44,7 @@ function formatDate(value?: string | null) {
 export function ApiKeysPanel() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const isPro = user?.plan === "pro";
+  const hasApiAccess = user?.features?.apiAccess === true;
 
   const [keys, setKeys] = useState<ApiKeySummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +58,7 @@ export function ApiKeysPanel() {
   const [copied, setCopied] = useState(false);
 
   const loadKeys = useCallback(async () => {
-    if (!isPro) {
+    if (!hasApiAccess) {
       setLoading(false);
       return;
     }
@@ -76,7 +76,7 @@ export function ApiKeysPanel() {
     } finally {
       setLoading(false);
     }
-  }, [isPro, toast]);
+  }, [hasApiAccess, toast]);
 
   useEffect(() => {
     loadKeys();
@@ -140,7 +140,7 @@ export function ApiKeysPanel() {
     );
   }
 
-  if (!isPro) {
+  if (!hasApiAccess) {
     return (
       <Card className="p-8 text-center space-y-4">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5">

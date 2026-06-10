@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { PlanBadge } from "@/components/dashboard/plan-badge";
 import { useAuth } from "@/hooks/use-auth";
 import { site } from "@/lib/site";
 
@@ -25,7 +26,9 @@ export default function AuthButton({
   if (isAuthenticated) {
     return (
       <Button className={className} asChild>
-        <a href="/profile">{user?.name ?? user?.email ?? children}</a>
+        <a href="/profile">
+          {user ? <PlanBadge plan={user.plan} /> : children}
+        </a>
       </Button>
     );
   }

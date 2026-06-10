@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { User, LogOut, Settings, Key } from "lucide-react";
+import { User, LogOut, Settings, Key, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PlanBadge } from "@/components/dashboard/plan-badge";
 import { PlanUsageBar } from "@/components/dashboard/plan-usage-bar";
+import { QuotaUsageDialog } from "@/components/dashboard/quota-usage-dialog";
 import { site } from "@/lib/site";
 import { logout } from "@/lib/auth";
 import { AuthApiError } from "@/lib/auth";
@@ -15,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 export function ProfilePage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -100,6 +103,14 @@ export function ProfilePage() {
               usage={user.usage}
               limits={user.limits}
             />
+            <Button
+              variant="outline"
+              className="w-full justify-start font-mono text-xs"
+              onClick={() => setQuotaDialogOpen(true)}
+            >
+              <BarChart3 className="h-3.5 w-3.5 mr-2" />
+              View plan details
+            </Button>
             {user.plan === "pro" ? (
               <Button
                 asChild
@@ -153,6 +164,17 @@ export function ProfilePage() {
           </Button>
         </div>
       </Card>
+
+      {user ? (
+        <QuotaUsageDialog
+          open={quotaDialogOpen}
+          onOpenChange={setQuotaDialogOpen}
+          plan={user.plan}
+          usage={user.usage}
+          limits={user.limits}
+          features={user.features}
+        />
+      ) : null}
     </div>
   );
 }
