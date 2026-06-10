@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Check, Copy, Plus } from "lucide-react";
 
 import { createShortUrl, type CreateUrlRequest } from "@/lib/url";
 import { UrlAuthError, UrlApiError } from "@/lib/url";
@@ -22,6 +22,8 @@ export function CreateUrlDialog() {
   const [open, setOpen] = useState(false);
   const [originalUrl, setOriginalUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [createdShortUrl, setCreatedShortUrl] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const { toast } = useToast();
 
@@ -40,11 +42,12 @@ export function CreateUrlDialog() {
 
       toast({
         title: "URL created successfully",
-        description: `Short code: ${result.shortCode}`,
+        description: result.shortUrl,
       });
 
       setOriginalUrl("");
-      setOpen(false);
+      setCreatedShortUrl(result.shortUrl);
+      setCopied(false);
 
       // ❌ NO refreshUser
       // ❌ NO window.location.reload()
@@ -92,8 +95,25 @@ export function CreateUrlDialog() {
     }
   };
 
+  const handleCopy = async () => {
+    if (!createdShortUrl) return;
+    const fullUrl = `https://lnqo.vercel.app/${createdShortUrl}`;
+    await navigator.clipboard.writeText(fullUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          setCreatedShortUrl("");
+          setCopied(false);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
@@ -124,6 +144,36 @@ export function CreateUrlDialog() {
             />
           </div>
 
+          {createdShortUrl ? (
+            <div className="rounded-lg border border-foreground/10 bg-foreground/[0.03] p-3">
+              <p className="mb-2 text-xs font-mono uppercase tracking-widest text-muted-foreground">
+                Short URL
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <code
+                  className="min-w-0 flex-1 truncate rounded-md border border-foreground/10 bg-background px-3 py-2 text-xs"
+                  title={createdShortUrl}
+                >
+                  {createdShortUrl}
+                </code>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={handleCopy}
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                  {copied ? "Copied" : "Copy URL"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           <DialogFooter className="gap-2">
             <Button
               type="button"
@@ -135,7 +185,7 @@ export function CreateUrlDialog() {
             </Button>
 
             <Button type="submit" disabled={loading || !originalUrl.trim()}>
-              {loading ? "Creating..." : "Create"}
+              {loading ? "Creating..." : createdShortUrl ? "Create another" : "Create"}
             </Button>
           </DialogFooter>
         </form>

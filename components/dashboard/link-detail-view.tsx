@@ -21,7 +21,8 @@ export function LinkDetailView({ data, period }: LinkDetailViewProps) {
   const [copied, setCopied] = useState<"short" | "dest" | null>(null);
 
   const copy = async (text: string, which: "short" | "dest") => {
-    await navigator.clipboard.writeText(text);
+    const fullUrl = which === "short" ? `https://lnqo.vercel.app/${text}` : text;
+    await navigator.clipboard.writeText(fullUrl);
     setCopied(which);
     setTimeout(() => setCopied(null), 2000);
   };

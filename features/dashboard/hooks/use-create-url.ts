@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 export function useCreateUrl() {
   const [loading, setLoading] = useState(false);
   const [shortCode, setShortCode] = useState("");
+  const [shortUrl, setShortUrl] = useState("");
   const { toast } = useToast();
 
   const createUrl = async (url: string) => {
@@ -14,9 +15,10 @@ export function useCreateUrl() {
     try {
       const result = await createShortUrl({ originalUrl: url.trim() }, { suppressToasts: true });
       setShortCode(result.shortCode);
+      setShortUrl(result.shortUrl);
       toast({
         title: "URL created successfully",
-        description: (result as any).message || `Short code: ${result.shortCode}`,
+        description: result.shortUrl,
       });
       return result;
     } catch (error) {
@@ -55,5 +57,5 @@ export function useCreateUrl() {
     }
   };
 
-  return { createUrl, loading, shortCode };
+  return { createUrl, loading, shortCode, shortUrl };
 }

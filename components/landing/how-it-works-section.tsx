@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCreateUrl } from "@/features/dashboard/hooks/use-create-url";
+import { Check, Copy } from "lucide-react";
 
 const steps = [
   {
@@ -29,7 +30,16 @@ export function HowItWorksSection() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const [url, setUrl] = useState("");
-  const { createUrl, loading, shortCode } = useCreateUrl();
+  const [copied, setCopied] = useState(false);
+  const { createUrl, loading, shortUrl } = useCreateUrl();
+  const previewUrl = shortUrl || "https://lnqo.app/abc123";
+
+  const copyShortUrl = async () => {
+    if (!shortUrl) return;
+    await navigator.clipboard.writeText(previewUrl);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -151,8 +161,23 @@ export function HowItWorksSection() {
                   <p className="text-sm uppercase tracking-[0.3em] text-background/40 mb-3">
                     Short URL preview
                   </p>
-                  <div className="rounded-2xl border border-background/10 px-4 py-3 text-sm text-background/80">
-                    {shortCode ? `lnqo/${shortCode}` : "lnqo/abc123"}
+                  <div className="flex flex-col gap-3 rounded-2xl border border-background/10 px-4 py-3 text-sm text-background/80 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="min-w-0 truncate" title={previewUrl}>
+                      {previewUrl}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={copyShortUrl}
+                      disabled={!shortUrl}
+                      className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-background/15 px-3 py-1.5 text-xs font-medium text-background transition hover:bg-background/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {copied ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                      {copied ? "Copied" : "Copy URL"}
+                    </button>
                   </div>
                 </div>
 
