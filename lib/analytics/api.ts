@@ -9,6 +9,7 @@ import type {
   ApiClickRecord,
 } from "./types";
 import { normalizeRecentClick, normalizeTopLink } from "./normalize";
+import { toast } from "@/hooks/use-toast";
 
 export class AnalyticsAuthError extends Error {
   constructor() {
@@ -33,7 +34,7 @@ type ApiEnvelope<T> = {
   message?: string;
 };
 
-async function analyticsFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function analyticsFetch<T>(path: string, init?: RequestInit, options?: { suppressToasts?: boolean }): Promise<T> {
   // Use relative URLs when running in the browser so requests remain same-origin
   // (this allows a Next.js rewrite/proxy to forward them to the real API and
   // keeps cookies/auth working). On the server, use the configured API URL.
@@ -57,18 +58,28 @@ async function analyticsFetch<T>(path: string, init?: RequestInit): Promise<T> {
     body = await res.json();
   } catch {
     if (!res.ok) {
-      throw new AnalyticsApiError(
-        res.statusText || "Request failed",
-        res.status,
-      );
+      const message = res.statusText || "Request failed";
+      if (!options?.suppressToasts) {
+        toast({
+          variant: "destructive",
+          title: `Error ${res.status}`,
+          description: message,
+        });
+      }
+      throw new AnalyticsApiError(message, res.status);
     }
   }
 
   if (!res.ok) {
-    throw new AnalyticsApiError(
-      (body as ApiEnvelope<T>).message || res.statusText || "Request failed",
-      res.status,
-    );
+    const message = (body as ApiEnvelope<T>).message || res.statusText || "Request failed";
+    if (!options?.suppressToasts) {
+      toast({
+        variant: "destructive",
+        title: `Error ${res.status}`,
+        description: message,
+      });
+    }
+    throw new AnalyticsApiError(message, res.status);
   }
 
   if (

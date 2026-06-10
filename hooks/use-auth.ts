@@ -85,7 +85,7 @@ export function useAuth() {
 
       // Try to refresh user with retries
       // The getCurrentUser function already has built-in retry logic
-      const maxRetries = 3;
+      const maxRetries = 1;
       let retryCount = 0;
       let user = null;
 
@@ -96,7 +96,7 @@ export function useAuth() {
         } catch (err) {
           retryCount++;
           if (retryCount < maxRetries) {
-            // Exponential backoff: 500ms, 1s, 2s
+            // Exponential backoff: 500ms
             const delay = Math.pow(2, retryCount - 1) * 500;
             await new Promise(resolve => setTimeout(resolve, delay));
           }

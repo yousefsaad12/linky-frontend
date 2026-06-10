@@ -12,6 +12,7 @@ import {
   fetchRecentClicks,
   fetchTopLinks,
 } from "@/lib/analytics/api";
+import { useToast } from "@/hooks/use-toast";
 
 export function useDashboardData(tab: string, period: AnalyticsPeriod) {
   const [overview, setOverview] = useState<AnalyticsOverviewData | null>(null);
@@ -26,6 +27,7 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
   const [linksLoading, setLinksLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { toast } = useToast();
 
   const loadOverview = useCallback(async () => {
     const [overviewData, recent] = await Promise.all([
@@ -138,44 +140,49 @@ export function useDashboardData(tab: string, period: AnalyticsPeriod) {
         await loadLiveFeed();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong.";
+      setError(errorMessage);
+      toast({
+        title: "Error loading data",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [tab, loadOverview, loadComparison, loadLiveFeed]);
+  }, [tab, loadOverview, loadComparison, loadLiveFeed, toast]);
 
-  // Initial load
+  // Consolidated data loading - single useEffect to avoid multiple requests
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    const loadData = async () => {
+      setError(null);
+      setLoading(true);
+      try {
+        if (tab === "overview") {
+          await loadOverview();
+        } else if (tab === "links") {
+          // Links table needs page/sort params, handled by caller
+          setLoading(false);
+        } else if (tab === "compare") {
+          await loadComparison();
+        } else {
+          await loadLiveFeed();
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Something went wrong.";
+        setError(errorMessage);
+        toast({
+          title: "Error loading data",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Reload on period change for overview
-  useEffect(() => {
-    if (tab !== "overview") return;
-    setLoading(true);
-    loadOverview()
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load overview."))
-      .finally(() => setLoading(false));
-  }, [period, tab, loadOverview]);
-
-  // Reload on tab change for live feed
-  useEffect(() => {
-    if (tab !== "live") return;
-    loadLiveFeed().catch((err) =>
-      setError(err instanceof Error ? err.message : "Failed to load live feed.")
-    );
-  }, [tab, loadLiveFeed]);
-
-  // Reload on tab/period change for comparison
-  useEffect(() => {
-    if (tab !== "compare") return;
-    setLoading(true);
-    loadComparison()
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "Failed to load comparison.")
-      )
-      .finally(() => setLoading(false));
-  }, [tab, period, loadComparison]);
+    loadData();
+  }, [tab, period, loadOverview, loadComparison, loadLiveFeed, toast]);
 
   return {
     overview,

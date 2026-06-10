@@ -12,7 +12,7 @@ export function useCreateUrl() {
 
     setLoading(true);
     try {
-      const result = await createShortUrl({ originalUrl: url.trim() });
+      const result = await createShortUrl({ originalUrl: url.trim() }, { suppressToasts: true });
       setShortCode(result.shortCode);
       toast({
         title: "URL created successfully",

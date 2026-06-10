@@ -1,4 +1,5 @@
 import { site } from "@/lib/site";
+import { toast } from "@/hooks/use-toast";
 
 export class UrlAuthError extends Error {
   constructor() {
@@ -49,7 +50,7 @@ export type GetAllUrlsResponse = {
   total: number;
 };
 
-async function urlFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function urlFetch<T>(path: string, init?: RequestInit, options?: { suppressToasts?: boolean }): Promise<T> {
   const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
   if (process.env.NODE_ENV !== "production") {
     console.debug("Fetching URL:", url);
@@ -86,15 +87,28 @@ async function urlFetch<T>(path: string, init?: RequestInit): Promise<T> {
     body = await res.json();
   } catch {
     if (!res.ok) {
-      throw new UrlApiError(res.statusText || "Request failed", res.status);
+      const message = res.statusText || "Request failed";
+      if (!options?.suppressToasts) {
+        toast({
+          variant: "destructive",
+          title: `Error ${res.status}`,
+          description: message,
+        });
+      }
+      throw new UrlApiError(message, res.status);
     }
   }
 
   if (!res.ok) {
-    throw new UrlApiError(
-      (body as ApiEnvelope<T>).message || res.statusText || "Request failed",
-      res.status,
-    );
+    const message = (body as ApiEnvelope<T>).message || res.statusText || "Request failed";
+    if (!options?.suppressToasts) {
+      toast({
+        variant: "destructive",
+        title: `Error ${res.status}`,
+        description: message,
+      });
+    }
+    throw new UrlApiError(message, res.status);
   }
 
   if (
@@ -121,6 +135,7 @@ type CreateUrlApiData = {
 
 export async function createShortUrl(
   data: CreateUrlRequest,
+  options?: { suppressToasts?: boolean },
 ): Promise<CreateUrlResponse> {
   const raw = await urlFetch<CreateUrlApiData | CreateUrlResponse>(
     "/api/v1/url",
@@ -128,6 +143,7 @@ export async function createShortUrl(
       method: "POST",
       body: JSON.stringify(data),
     },
+    options,
   );
 
   if (raw && typeof raw === "object" && "url" in raw && raw.url) {
