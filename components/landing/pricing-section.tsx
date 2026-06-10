@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import AuthButton from "@/components/ui/auth-button";
 
 const plans = [
@@ -233,18 +234,34 @@ function PlanCard({
      
 
       {/* CTA — always at bottom */}
-      <AuthButton
-        className={`w-full py-3 flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-all group ${
-          plan.variant === "solid"
-            ? "bg-foreground text-background hover:bg-foreground/90"
-            : "bg-transparent border border-foreground/20 text-foreground hover:bg-foreground/5"
-        }`}
-      >
-        <>
-          {plan.cta}
-          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-        </>
-      </AuthButton>
+      {plan.name === "Free" ? (
+        <AuthButton
+          className={`w-full py-3 flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-all group ${
+            plan.variant === "solid"
+              ? "bg-foreground text-background hover:bg-foreground/90"
+              : "bg-transparent border border-foreground/20 text-foreground hover:bg-foreground/5"
+          }`}
+        >
+          <>
+            {plan.cta}
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </>
+        </AuthButton>
+      ) : (
+        <Button
+          asChild
+          className={`w-full py-3 flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-all group ${
+            plan.variant === "solid"
+              ? "bg-foreground text-background hover:bg-foreground/90"
+              : "bg-transparent border border-foreground/20 text-foreground hover:bg-foreground/5"
+          }`}
+        >
+          <a href="mailto:ysaad.dev@gmail.com">
+            {plan.cta}
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+          </a>
+        </Button>
+      )}
     </div>
   );
 }
