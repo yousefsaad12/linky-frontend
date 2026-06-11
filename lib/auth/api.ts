@@ -1,9 +1,5 @@
 import { site } from "@/lib/site";
-import type {
-  ApiKeySummary,
-  CreateApiKeyResponse,
-  UserProfile,
-} from "./types";
+import type { ApiKeySummary, CreateApiKeyResponse, UserProfile } from "./types";
 import { toast } from "@/hooks/use-toast";
 
 export class AuthApiError extends Error {
@@ -22,8 +18,16 @@ type ApiEnvelope<T> = {
   message?: string;
 };
 
-async function authFetch<T>(path: string, init?: RequestInit, options?: { suppressToasts?: boolean }): Promise<T> {
-  const url = `${site.apiUrl}${path.startsWith("/") ? path : `/${path}`}`;
+async function authFetch<T>(
+  path: string,
+  init?: RequestInit,
+  options?: { suppressToasts?: boolean },
+): Promise<T> {
+  const isBrowser = typeof window !== "undefined";
+  const base = isBrowser
+    ? ""
+    : process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "";
+  const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
 
   const res = await fetch(url, {
     ...init,
@@ -53,7 +57,8 @@ async function authFetch<T>(path: string, init?: RequestInit, options?: { suppre
   }
 
   if (!res.ok) {
-    const message = (body as ApiEnvelope<T>).message || res.statusText || "Request failed";
+    const message =
+      (body as ApiEnvelope<T>).message || res.statusText || "Request failed";
     if (!options?.suppressToasts) {
       toast({
         variant: "destructive",
@@ -65,8 +70,15 @@ async function authFetch<T>(path: string, init?: RequestInit, options?: { suppre
   }
 
   // Show success toast for successful mutations (POST, PUT, DELETE, PATCH)
-  if (res.ok && init?.method && init.method !== "GET" && init.method !== "HEAD" && !options?.suppressToasts) {
-    const successMessage = (body as ApiEnvelope<T>).message || "Operation successful";
+  if (
+    res.ok &&
+    init?.method &&
+    init.method !== "GET" &&
+    init.method !== "HEAD" &&
+    !options?.suppressToasts
+  ) {
+    const successMessage =
+      (body as ApiEnvelope<T>).message || "Operation successful";
     toast({
       title: "Success",
       description: successMessage,
@@ -105,7 +117,9 @@ function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
     plan,
     limits: {
       maxLinks:
-        maxLinks === null || maxLinks === undefined || !Number.isFinite(maxLinks)
+        maxLinks === null ||
+        maxLinks === undefined ||
+        !Number.isFinite(maxLinks)
           ? null
           : Number(maxLinks),
       clickHistoryDays: Number(limits.clickHistoryDays) || 30,
@@ -125,7 +139,11 @@ function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
 }
 
 export async function getCurrentUser(): Promise<UserProfile> {
-  const raw = await authFetch<Record<string, unknown>>("/api/v1/auth/me", undefined, { suppressToasts: true });
+  const raw = await authFetch<Record<string, unknown>>(
+    "/api/v1/auth/me",
+    undefined,
+    { suppressToasts: true },
+  );
   return normalizeUserProfile(raw);
 }
 
@@ -143,7 +161,9 @@ export async function listApiKeys(): Promise<ApiKeySummary[]> {
   }));
 }
 
-export async function createApiKey(name: string): Promise<CreateApiKeyResponse> {
+export async function createApiKey(
+  name: string,
+): Promise<CreateApiKeyResponse> {
   return authFetch<CreateApiKeyResponse>("/api/v1/auth/api-keys", {
     method: "POST",
     body: JSON.stringify({ name }),

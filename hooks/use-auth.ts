@@ -22,23 +22,30 @@ const notifyListeners = () => {
   listeners.forEach(listener => listener(globalUser, globalIsAuthenticated, globalLoading));
 };
 
+// ✅ Safe localStorage helpers — won't crash in Brave or mobile
+const safeStorage = {
+  get: (key: string) => {
+    try { return localStorage.getItem(key); } catch { return null; }
+  },
+  remove: (key: string) => {
+    try { localStorage.removeItem(key); } catch {}
+  },
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(globalUser);
   const [isAuthenticated, setIsAuthenticated] = useState(globalIsAuthenticated);
   const [loading, setLoading] = useState(globalLoading);
 
   const logoutTimerRef = useRef<number | null>(null);
-
   const SESSION_TTL = 60 * 60 * 1000;
 
   const scheduleAutoLogout = (loginAt: number) => {
     if (logoutTimerRef.current) {
       window.clearTimeout(logoutTimerRef.current);
     }
-
     const expiresAt = loginAt + SESSION_TTL;
     const remaining = Math.max(0, expiresAt - Date.now());
-
     logoutTimerRef.current = window.setTimeout(async () => {
       try {
         await logout();
@@ -48,7 +55,6 @@ export function useAuth() {
     }, remaining);
   };
 
-  // ✅ THIS is what your component was missing
   const refreshUser = useCallback(async () => {
     try {
       const profile = await getCurrentUser();
@@ -58,18 +64,6 @@ export function useAuth() {
       notifyListeners();
       return profile;
     } catch (err) {
-      // Only set unauthenticated if it's a definitive 401 after retries
-      // The getCurrentUser function now handles retries internally
-      if (err instanceof AuthApiError && err.status === 401) {
-        globalUser = null;
-        globalIsAuthenticated = false;
-        globalLoading = false;
-        notifyListeners();
-        return null;
-      }
-
-      // For other errors, don't permanently set unauthenticated
-      // This allows retry on network issues, CORS timing, etc.
       globalUser = null;
       globalIsAuthenticated = false;
       globalLoading = false;
@@ -93,27 +87,21 @@ export function useAuth() {
         globalLoading = true;
         notifyListeners();
 
-        // Check if we just came from OAuth redirect
+        // ✅ Safe URL param + localStorage check
         const urlParams = new URLSearchParams(window.location.search);
-        const justLoggedIn = urlParams.has('login') || localStorage.getItem('justLoggedIn') === 'true';
+        const justLoggedIn =
+          urlParams.has("login") || safeStorage.get("justLoggedIn") === "true";
+        safeStorage.remove("justLoggedIn");
 
-        // Clear the flag if it exists
-        if (localStorage.getItem('justLoggedIn') === 'true') {
-          localStorage.removeItem('justLoggedIn');
-        }
-
-        // If just logged in via OAuth, wait a bit for cookie to be available
         if (justLoggedIn) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-
-        // Try to refresh user - getCurrentUser handles retries internally
-        try {
-          const user = await refreshUser();
-          // Success - user is authenticated
-        } catch (err) {
-          // Error - user is not authenticated, no need to retry
-          // getCurrentUser already handles retries for 401
+          // ✅ Retry up to 3 times with 600ms delay instead of fixed 500ms
+          for (let i = 0; i < 3; i++) {
+            const user = await refreshUser();
+            if (user) break;
+            await new Promise(r => setTimeout(r, 600));
+          }
+        } else {
+          await refreshUser();
         }
 
         globalLoading = false;
