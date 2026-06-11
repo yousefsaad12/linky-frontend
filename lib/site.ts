@@ -1,11 +1,10 @@
-/** lnqo — developer-first link analytics (matches URLShortener backend) */
+/** lnqo — developer-first link analytics */
 
-// For browser requests, use empty string to go through Vercel proxy (same domain)
-// For server-side requests, use the full Azure URL directly
-const apiUrl =
-  typeof window !== "undefined"
-    ? "" // ✅ browser: same-origin proxy → no cookie blocking
-    : process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "http://localhost:3000"; // server-side
+const isServer = typeof window === "undefined";
+
+const apiUrl = isServer
+  ? process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "http://localhost:3000"
+  : ""; // ✅ empty string forces browser to use Vercel proxy
 
 export const site = {
   name: "lnqo",
@@ -14,7 +13,7 @@ export const site = {
     "Shorten links, serve instant redirects, and track every click with simple, production-grade APIs and realtime analytics.",
   apiUrl,
   auth: {
-    signIn: "/api/v1/auth/google", // ✅ relative URL — goes through Vercel proxy
+    signIn: "/api/v1/auth/google", // ✅ relative URL
   },
   links: {
     dashboard: "/dashboard",
