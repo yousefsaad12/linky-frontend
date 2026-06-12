@@ -9,8 +9,6 @@ import { PlanBadge } from "@/components/dashboard/plan-badge";
 import { PlanUsageBar } from "@/components/dashboard/plan-usage-bar";
 import { QuotaUsageDialog } from "@/components/dashboard/quota-usage-dialog";
 import { site } from "@/lib/site";
-import { logout } from "@/lib/auth";
-import { AuthApiError } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -19,29 +17,7 @@ export function ProfilePage() {
   const { toast } = useToast();
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast({
-        title: "Logged out successfully",
-      });
-      window.location.href = "/";
-    } catch (error) {
-      if (error instanceof AuthApiError) {
-        toast({
-          title: "Logout failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+  const { logout } = useAuth();
 
   if (authLoading) {
     return (
@@ -74,7 +50,7 @@ export function ProfilePage() {
             variant="outline"
             size="sm"
             className="rounded-full font-mono text-xs"
-            onClick={handleLogout}
+            onClick={logout}
           >
             <LogOut className="h-3.5 w-3.5 mr-1.5" />
             Logout

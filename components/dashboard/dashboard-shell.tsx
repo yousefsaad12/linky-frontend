@@ -13,8 +13,6 @@ import { Button } from "@/components/ui/button";
 import { site } from "@/lib/site";
 import type { AnalyticsPeriod } from "@/lib/analytics/types";
 import { cn } from "@/lib/utils";
-import { logout } from "@/lib/auth";
-import { AuthApiError } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export type DashboardTab = "overview" | "links" | "compare" | "live";
@@ -59,30 +57,7 @@ export function DashboardShell({
   const { toast } = useToast();
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast({
-        title: "Logged out successfully",
-      });
-      // Redirect to home page
-      window.location.href = "/";
-    } catch (error) {
-      if (error instanceof AuthApiError) {
-        toast({
-          title: "Logout failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-      }
-    }
-  };
+  const { logout } = useAuth();
 
   return (
     <div className="min-h-screen noise-overlay">
@@ -179,7 +154,7 @@ export function DashboardShell({
                 variant="outline"
                 size="sm"
                 className="rounded-full font-mono text-xs"
-                onClick={handleLogout}
+                onClick={logout}
               >
                 <LogOut className="h-3.5 w-3.5 mr-1.5" />
                 Logout

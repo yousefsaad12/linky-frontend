@@ -72,6 +72,19 @@ export function useAuth() {
     }
   }, []);
 
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+    } catch (err) {
+      // Ignore logout API errors
+    }
+    globalUser = null;
+    globalIsAuthenticated = false;
+    globalLoading = false;
+    notifyListeners();
+    window.location.href = "/";
+  }, []);
+
   useEffect(() => {
     // Subscribe to global state changes
     const listener = (u: User | null, auth: boolean, load: boolean) => {
@@ -122,5 +135,6 @@ export function useAuth() {
     isAuthenticated,
     loading,
     refreshUser,
+    logout: handleLogout,
   };
 }

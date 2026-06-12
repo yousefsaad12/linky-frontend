@@ -5,8 +5,6 @@ import dynamic from "next/dynamic";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { site } from "@/lib/site";
 import { useAuth } from "@/hooks/use-auth";
-import { logout } from "@/lib/auth";
-import { AuthApiError } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 const Button = dynamic(() => import("@/components/ui/button").then(mod => ({ default: mod.Button })), { ssr: true });
@@ -23,35 +21,11 @@ const navLinks = [
 export function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const { toast } = useToast();
 
 const handleSignIn = () => {
   window.location.href = `${site.auth.signIn}?prompt=select_account`;
-};
-  const handleLogout = async () => {
-  try {
-    await logout();
-    toast({
-      title: "Logged out successfully",
-    });
-    localStorage.setItem("loggedOut", "true"); // 👈 add this
-    window.location.href = "/";
-  } catch (error) {
-    if (error instanceof AuthApiError) {
-      toast({
-        title: "Logout failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Something went wrong",
-        variant: "destructive",
-      });
-    }
-  }
 };
 
   useEffect(() => {
@@ -94,7 +68,7 @@ const handleSignIn = () => {
             user={user}
             loading={loading}
             onSignIn={handleSignIn}
-            onLogout={handleLogout}
+            onLogout={logout}
           />
 
           <button
@@ -168,7 +142,7 @@ const handleSignIn = () => {
                 <Button
                   className="flex-1 bg-black text-white rounded-full h-14 text-base"
                   onClick={async () => {
-                    await handleLogout();
+                    await logout();
                     setIsMobileMenuOpen(false);
                   }}
                 >

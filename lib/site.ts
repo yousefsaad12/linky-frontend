@@ -1,7 +1,7 @@
 /** lnqo — developer-first link analytics */
 
 const isServer = typeof window === "undefined";
-const devUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")
+const devUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "");
 const apiUrl = isServer
   ? process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "http://localhost:3000"
   : ""; // ✅ empty string forces browser to use Vercel proxy
