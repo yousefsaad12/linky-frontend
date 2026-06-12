@@ -85,7 +85,7 @@ export function DocsContent() {
           <div className="bg-white/[0.02] border border-white/5 rounded-xl p-4 lg:p-5 space-y-2 lg:space-y-3">
             <h4 className="text-[10px] lg:text-xs font-mono text-white font-medium">Base API URL</h4>
             <p className="text-[10px] lg:text-xs font-mono text-white/50 bg-black/40 border border-white/10 p-2 lg:p-3 rounded-lg overflow-x-auto selection:bg-white/10">
-              {site.apiUrl}
+              {site.devUrl}
             </p>
             <p className="text-[10px] lg:text-xs text-white/40 leading-relaxed">
               All requests must be made over HTTPS. HTTP requests will be automatically redirected to secure connections.

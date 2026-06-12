@@ -1,7 +1,7 @@
 /** lnqo — developer-first link analytics */
 
 const isServer = typeof window === "undefined";
-
+const devUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "")
 const apiUrl = isServer
   ? process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "http://localhost:3000"
   : ""; // ✅ empty string forces browser to use Vercel proxy
@@ -12,6 +12,7 @@ export const site = {
   description:
     "Shorten links, serve instant redirects, and track every click with simple, production-grade APIs and realtime analytics.",
   apiUrl,
+  devUrl,
   auth: {
     signIn: "/api/v1/auth/google", // ✅ relative URL
   },
