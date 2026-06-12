@@ -141,7 +141,14 @@ function normalizeUserProfile(raw: Record<string, unknown>): UserProfile {
 export async function getCurrentUser(): Promise<UserProfile> {
   const raw = await authFetch<Record<string, unknown>>(
     "/api/v1/auth/me",
-    undefined,
+    {
+      method: "GET",
+      headers: {
+        "Cache-Control": "no-cache, no-store",
+        "Pragma": "no-cache",
+      },
+      cache: "no-store",
+    },
     { suppressToasts: true },
   );
   return normalizeUserProfile(raw);
