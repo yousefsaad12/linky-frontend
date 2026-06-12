@@ -32,7 +32,7 @@ export function HowItWorksSection() {
   const [url, setUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const { createUrl, loading, shortUrl } = useCreateUrl();
-  const previewUrl = shortUrl || "https://lnqo.app/abc123";
+  const previewUrl = shortUrl || "https://lnqo.vercel.app/abc123";
 
   const copyShortUrl = async () => {
     if (!shortUrl) return;
